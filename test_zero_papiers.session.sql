@@ -1,0 +1,29 @@
+-- @block
+SELECT * FROM documents;
+
+-- @block
+ALTER TABLE documents ADD mime_type VARCHAR(100) NOT NULL;
+
+-- @block
+ALTER TABLE documents ADD chemin_fichier TEXT NOT NULL;
+
+-- @block
+ALTER TABLE users ADD user_uuid VARCHAR(36) NOT NULL UNIQUE;
+
+-- @block
+ALTER TABLE documents DROP FOREIGN KEY documents_ibfk_1;
+
+-- @block
+ALTER TABLE documents MODIFY user_id VARCHAR(36);
+
+-- @block
+ALTER TABLE documents RENAME COLUMN user_id to user_uuid;
+
+
+
+-- @block
+ALTER TABLE documents 
+ADD CONSTRAINT fk_documents_user_id 
+FOREIGN KEY (user_id) REFERENCES users(uuid);
+
+-- @block
