@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zéro Papiers - Connexion</title>
+    <style>
+        :root {
+            --primary: #FF6B00; 
+            --primary-hover: #E65A00;
+            --secondary: #009A44; 
+            --background: #F4F4F6;
+            --surface: #ffffff;
+            --text: #333333;
+            --border: #E0E0E0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--background); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        
+        .auth-card {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 12px;
+            border-top: 5px solid var(--primary); /* Ligne Orange pour la connexion */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            max-width: 400px;
+            width: 100%;
+        }
+        .auth-card h2 { text-align: center; margin-bottom: 25px; color: var(--primary); font-weight: 800; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; background-color: #FAFAFA; }
+        input:focus { outline: none; border-color: var(--primary); background-color: var(--surface); box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1); }
+        
+        .btn { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+        .btn:hover { background-color: var(--primary-hover); }
+        
+        .link-text { display: block; text-align: center; margin-top: 20px; font-size: 14px; color: var(--text); text-decoration: none; font-weight: 500; }
+        .link-text span { color: var(--secondary); font-weight: bold; }
+        .link-text:hover span { text-decoration: underline; }
+
+        /* Notifications */
+        .alert { padding: 12px; border-radius: 6px; font-weight: bold; margin-bottom: 15px; display: none; text-align: center; font-size: 14px;}
+        .alert-success { background-color: #E5F5EC; color: var(--secondary); border: 1px solid var(--secondary); }
+        .alert-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        <h2>Connexion</h2>
+
+        <div id="alert-success" class="alert alert-success"></div>
+        <div id="alert-danger" class="alert alert-danger"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Email institutionnel ou personnel</label>
+                <input type="email" id="email" required placeholder="exemple@domain.ci">
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn">Se connecter</button>
+        </form>
+        <a href="register.html" class="link-text">Pas encore de compte ? <span>S'inscrire</span></a>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:3000";
+
+        function showMessage(type, text) {
+            const successAlert = document.getElementById('alert-success');
+            const dangerAlert = document.getElementById('alert-danger');
+            successAlert.style.display = 'none';
+            dangerAlert.style.display = 'none';
+
+            if (type === 'success') {
+                successAlert.textContent = text;
+                successAlert.style.display = 'block';
+            } else {
+                dangerAlert.textContent = text;
+                dangerAlert.style.display = 'block';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Vérifier si l'utilisateur a le role ADMIN ou USER
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('success', "Connexion réussie !");
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userUuid', data.user.uuid);
+                    localStorage.setItem('userData', JSON.stringify(data.user))
+                    setTimeout(() => {
+                        if (data.user.role.toLowerCase() === 'admin') {
+                            window.location.href = 'admin.html'
+                            
+                        } else {
+                            window.location.href = 'dashboard.html'
+                            
+                        }
+                    }, 1000);
+                } else {
+                    showMessage('error', data.message || "Identifiants incorrects.");
+                }
+            } catch (error) {
+                showMessage('error', "Impossible de se connecter au serveur.");
+            }
+        });
+    </script>
+</body>
+</html>

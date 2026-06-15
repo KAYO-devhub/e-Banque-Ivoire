@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zéro Papiers - Accueil</title>
+    <style>
+        :root {
+            --primary: #FF6B00; /* Orange CI */
+            --primary-hover: #E65A00;
+            --secondary: #009A44; /* Vert CI */
+            --background: #F4F4F6;
+            --surface: #ffffff;
+            --text: #333333;
+            --text-muted: #666666;
+            --border: #E0E0E0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--background); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; }
+        
+        .hero-card {
+            background: var(--surface);
+            padding: 40px;
+            border-radius: 12px;
+            border-top: 5px solid var(--secondary); /* Touche de Vert en haut de la carte */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 { color: var(--primary); font-size: 32px; margin-bottom: 5px; font-weight: 900; }
+        .subtitle { color: var(--secondary); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+        p { color: var(--text-muted); font-size: 16px; margin-bottom: 30px; line-height: 1.6; }
+        
+        .btn-group { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary { background-color: var(--primary); color: white; box-shadow: 0 2px 4px rgba(255, 107, 0, 0.3); }
+        .btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn-outline { background-color: transparent; color: var(--secondary); border: 2px solid var(--secondary); }
+        .btn-outline:hover { background-color: rgba(0, 154, 68, 0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="hero-card">
+        <h1>Zéro Papiers</h1>
+        <div class="subtitle">République de Côte d'Ivoire</div>
+        <p>Gérez, scannez et sécurisez tous vos documents administratifs en un seul endroit. Simplifiez votre quotidien dès aujourd'hui.</p>
+        <div class="btn-group">
+            <a href="login.html" class="btn btn-primary">Se Connecter</a>
+            <a href="register.html" class="btn btn-outline">Créer un compte</a>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,158 @@
+:root {
+  --primary: #FF6B00;    /* Orange Côte d'Ivoire */
+  --success: #009A44;    /* Vert Côte d'Ivoire */
+  --danger: #FF3B30;
+  --dark: #333333;
+  --light: #F9F9F9;
+  --white: #FFFFFF;
+  --border: #E0E0E0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #F4F4F6;
+  color: var(--dark);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 750px;
+  margin: 40px auto;
+  padding: 25px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 3px solid var(--success);
+}
+
+header h1 {
+  color: var(--primary);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+h2 {
+  font-size: 20px;
+  margin-bottom: 15px;
+  color: var(--dark);
+}
+
+/* Navigation alternative */
+.nav-links {
+  display: flex;
+  justify-content: space-between;
+  background: var(--light);
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid var(--border);
+}
+
+.nav-links a {
+  color: var(--dark);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nav-links a:hover {
+  color: var(--primary);
+}
+
+/* Formulaires */
+.form-group {
+  margin-bottom: 18px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+input[type="text"], input[type="email"], input[type="password"], input[type="file"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: var(--light);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: var(--white);
+}
+
+/* Boutons */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background-color: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  margin-top: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-success { background-color: var(--success); }
+.btn-default { background-color: #EAEAEA; color: #333; box-shadow: none; }
+.btn-danger { background-color: var(--danger); }
+.btn:disabled { background-color: #CCCCCC; cursor: not-allowed; }
+
+/* Cadres informatifs et listes de documents */
+.profile-box {
+  background: #FDFDFD;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border-left: 5px solid var(--success);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.card {
+  background: var(--white);
+  border-left: 4px solid var(--primary);
+  padding: 16px;
+  margin: 12px 0;
+  border-radius: 4px 8px 8px 4px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card.admin-card { border-left-color: var(--success); }
+.card-info h3 { font-size: 16px; color: #333; }
+.card-info p { font-size: 13px; color: #666; margin-top: 2px; }
+
+.hidden { display: none !important; }

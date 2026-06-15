@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zéro Papier CI - Espace Administration</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ZÉRO PAPIER CÔTE D'IVOIRE</h1>
+      <p class="subtitle">🔒 Portail d'Authentification et de Contrôle Républicain</p>
+    </header>
+
+    <nav class="nav-links">
+      <a href="index.html">Accueil</a>
+      <a href="dashboard.html">Mon Espace</a>
+    </nav>
+
+    <main>
+      <h2>Contrôle de validité des pièces</h2>
+      <p style="font-size:14px; color:#555; margin-bottom: 15px;">
+        Interrogez instantanément la signature électronique ou le code d'un document pour valider son intégrité auprès des ministères.
+      </p>
+
+      <form id="verifyForm">
+        <div class="form-group">
+          <label for="qrData">Entrez la clé de hachage du QR Code</label>
+          <input type="text" id="qrData" required placeholder="Ex: QR-98765-XYZ-CI">
+        </div>
+        <button type="submit" class="btn btn-success" id="verifyBtn">Vérifier l'authenticité</button>
+      </form>
+
+      <div id="resultBox" class="hidden" style="margin-top: 25px;"></div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { checkAuth } from './js/app.js';
+    import { documentAPI } from './js/api.js';
+
+    const { user } = checkAuth(true);
+
+    // Blocage strict de sécurité côté client
+    if (!user || user.role.toLowerCase() !== 'admin') {
+      alert("Accès refusé : Zone réservée aux agents de l'administration.");
+      window.location.href = 'index.html';
+    }
+
+    const resultBox = document.getElementById('resultBox');
+
+    document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const qrData = document.getElementById('qrData').value;
+      const btn = document.getElementById('verifyBtn');
+
+      btn.disabled = true;
+      btn.textContent = "Interrogation du registre central d'État...";
+      resultBox.classList.add('hidden');
+
+      try {
+        const res = await documentAPI.verifyQR(qrData);
+        resultBox.className = "card admin-card";
+        resultBox.innerHTML = `
+          <div class="card-info">
+            <h3 style="color: var(--success);">✅ CERTIFICAT VALIDE</h3>
+            <p style="margin-top: 5px;"><strong>Réponse de l'infrastructure :</strong> ${res.message || 'Le document présenté est authentique.'}</p>
+          </div>
+        `;
+      } catch (err) {
+        resultBox.className = "card";
+        resultBox.style.borderLeftColor = "var(--danger)";
+        resultBox.innerHTML = `
+          <div class="card-info">
+            <h3 style="color: var(--danger);">❌ ALERTE CONTRÔLE : DOCUMENT NON RECONNU</h3>
+            <p style="margin-top: 5px;"><strong>Motif du rejet :</strong> ${err.message}</p>
+          </div>
+        `;
+      } finally {
+        resultBox.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = "Vérifier l'authenticité";
+      }
+    });
+  </script>
+</body>
+</html>

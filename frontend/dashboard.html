@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zéro Papiers - Espace Personnel</title>
+    <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/cirocosta/jscanify@master/dist/jscanify.min.js"></script>
+    <style>
+        :root {
+            --primary: #FF6B00;       /* Orange CI */
+            --primary-hover: #E65A00;
+            --success: #009A44;       /* Vert CI */
+            --success-hover: #008038;
+            --danger: #FF3B30;
+            --background: #F4F4F6;
+            --surface: #ffffff;
+            --text: #333333;
+            --text-muted: #666666;
+            --border: #E0E0E0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        header h1 { 
+            font-size: 24px; 
+            color: var(--primary); 
+            font-weight: 800;
+        }
+        
+        header .sub {
+            font-size: 12px;
+            color: var(--success);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ZONE DES MESSAGES (Succès / Erreur) */
+        .alert-container {
+            margin-bottom: 20px;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .alert-success { background-color: #E5F5EC; color: var(--success); border: 1px solid var(--success); }
+        .alert-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        /* UI/UX RESPONSIVE GRID */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s;
+        }
+        
+        /* Accents Orange et Vert sur les cartes de service */
+        .card-upload { border-top: 5px solid var(--primary); }
+        .card-manage { border-top: 5px solid var(--success); }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--background);
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        /* Formulaire & Actions */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background-color: #FAFAFA;
+        }
+        input:focus { outline: none; border-color: var(--primary); }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover { background-color: var(--success-hover); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: #e0241b; }
+        .btn-outline { background-color: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-outline:hover { background-color: var(--background); }
+
+        /* Zone de prévisualisation Caméra */
+        #camera-container {
+            display: none;
+            margin-top: 15px;
+            text-align: center;
+            background: #000;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        video, canvas {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 6px;
+        }
+
+        /* Liste des Documents */
+        .doc-list { list-style: none; }
+        .doc-item {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: #FAFAFA;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.01);
+        }
+        @media (min-width: 480px) {
+            .doc-item {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+        .doc-info { margin-bottom: 10px; }
+        @media (min-width: 480px) { .doc-info { margin-bottom: 0; } }
+        .doc-info strong { color: var(--text); font-size: 15px; }
+        
+        .doc-actions { display: flex; gap: 10px; }
+        .doc-actions button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>Zero Papiers Workspace</h1>
+            <div class="sub">Ministère de la Transition Numérique • CI</div>
+        </div>
+        <button class="btn btn-outline" style="width: auto; margin:0; padding: 10px 20px;" onclick="logout()">Déconnexion</button>
+    </header>
+
+    <div class="alert-container">
+        <div id="alert-success" class="alert alert-success"></div>
+        <div id="alert-danger" class="alert alert-danger"></div>
+    </div>
+
+    <div class="dashboard-grid">
+        
+        <div class="card card-upload">
+            <h2>📁 Service Disponible - Import & Scan</h2>
+            
+            <div class="form-group">
+                <label>Importer un fichier existant :</label>
+                <input type="file" id="file-input">
+                <button class="btn" onclick="uploadFile()">Téléverser le document</button>
+            </div>
+
+            <hr style="margin: 25px 0; border: 0; border-top: 1px dashed var(--border);">
+
+            <div class="form-group">
+                <label>Scanner un document via la caméra :</label>
+                <button class="btn btn-success" onclick="startCamera()">Activer la Caméra</button>
+                
+                <div id="camera-container">
+                    <video id="video" autoplay playsinline></video>
+                    <button class="btn" onclick="captureAndScan()">Prendre la photo & Scanner</button>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-manage">
+            <h2>⚙️ Gestion de Documents</h2>
+            <div id="no-docs" style="color: var(--text-muted); font-style: italic;">Aucun document disponible dans votre espace national.</div>
+            <ul id="documents-container" class="doc-list"></ul>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:3000";
+    
+    // ✅ Récupération dynamique depuis le localStorage
+    const userUuid = localStorage.getItem('userUuid');
+    const token = localStorage.getItem('token');
+
+    // Sécurité : Redirection immédiate si non connecté
+    if (!token || !userUuid) {
+        window.location.href = "login.html";
+    }
+
+    // Gestionnaire de notifications unifié
+    function showMessage(type, text) {
+        const successAlert = document.getElementById('alert-success');
+        const dangerAlert = document.getElementById('alert-danger');
+        
+        successAlert.style.display = 'none';
+        dangerAlert.style.display = 'none';
+
+        if (type === 'success') {
+            successAlert.textContent = text;
+            successAlert.style.display = 'block';
+        } else {
+            dangerAlert.textContent = text;
+            dangerAlert.style.display = 'block';
+        }
+        setTimeout(() => {
+            successAlert.style.display = 'none';
+            dangerAlert.style.display = 'none';
+        }, 5000);
+    }
+
+    // Déconnexion officielle
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userUuid');
+        window.location.href = "index.html";
+    }
+
+    // --- OPTION A : UPLOAD STANDARD ---
+    async function uploadFile() {
+        const fileInput = document.getElementById('file-input');
+        if (!fileInput.files[0]) return showMessage('error', 'Veuillez choisir un fichier.');
+
+        const formData = new FormData();
+        formData.append('monFichier', fileInput.files[0]);
+
+        try {
+            const response = await fetch(`${API_URL}/documents/${userUuid}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showMessage('success', "Document téléversé et enregistré !");
+                fileInput.value = ""; // Clear input
+                loadDocuments();
+            } else {
+                showMessage('error', data.message || "Erreur lors de l'envoi.");
+            }
+        } catch (err) {
+            showMessage('error', 'Erreur de connexion avec le serveur.');
+        }
+    }
+
+    // --- OPTION B : SCAN VIA CAMERA & JSCANIFY ---
+
+    function startCamera() {
+        const container = document.getElementById('camera-container');
+        container.style.display = 'block';
+        
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                document.getElementById('video').srcObject = stream;
+            })
+            .catch(err => showMessage('error', "Impossible d'accéder à la caméra de votre appareil."));
+    }
+
+    async function captureAndScan() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        canvas.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append('monFichier', blob, 'scanned_doc.jpg');
+
+            try {
+                const response = await fetch(`${API_URL}/documents/scan/${userUuid}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showMessage('success', "Document numérisé avec succès !");
+                    loadDocuments();
+                    // Éteindre le flux de la caméra
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    document.getElementById('camera-container').style.display = 'none';
+                } else {
+                    showMessage('error', data.message || "Le traitement du scan a échoué.");
+                }
+            } catch (err) {
+                showMessage('error', "Échec de l'envoi du document scanné.");
+            }
+        }, 'image/jpeg');
+      }
+
+    // --- CATEGORIE : GESTION DES DOCUMENTS (VIEW, UPDATE, DELETE) ---
+    async function loadDocuments() {
+        try {
+            const response = await fetch(`${API_URL}/getDocuments/${userUuid}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const docs = await response.json();
+            
+            const container = document.getElementById('documents-container');
+            const noDocs = document.getElementById('no-docs');
+            container.innerHTML = "";
+
+            if (!docs || docs.length === 0) {
+                noDocs.style.display = 'block';
+                return;
+            }
+            noDocs.style.display = 'none';
+
+            docs.forEach(doc => {
+                const li = document.createElement('li');
+                li.className = 'doc-item';
+                li.innerHTML = `
+                    <div class="doc-info">
+                        <strong>${doc.nom_document}</strong><br>
+                        <small style="color: var(--text-muted); font-weight: 500;">${doc.type_document}</small>
+                    </div>
+                    <div class="doc-actions">
+                        <button style="background: #E5F5EC; color: var(--success);" onclick="renameDocument('${doc.nom_document}')">Modifier</button>
+                        <button style="background: #fee2e2; color: var(--danger);" onclick="deleteDocument('${doc.nom_document}')">Supprimer</button>
+                    </div>
+                `;
+                container.appendChild(li);
+            });
+        } catch (err) {
+            showMessage('error', 'Erreur lors du chargement des documents administratifs.');
+        }
+    }
+
+    async function renameDocument(oldName) {
+        const newName = prompt("Entrez le nouveau nom pour ce document :", oldName);
+        if (!newName || newName === oldName) return;
+
+        try {
+            const response = await fetch(`${API_URL}/updateDocuments/${userUuid}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ nom_document: oldName, nouveau_nom: newName })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showMessage('success', "Le document a été renommé avec succès !");
+                loadDocuments();
+            } else {
+                showMessage('error', data.message || "Erreur lors de la modification.");
+            }
+        } catch (err) {
+            showMessage('error', 'Erreur de communication lors de la modification.');
+        }
+    }
+
+    async function deleteDocument(name) {
+        if (!confirm(`Voulez-vous définitivement supprimer "${name}" de votre espace de stockage ?`)) return;
+
+        try {
+            const response = await fetch(`${API_URL}/deleteDocuments/${userUuid}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ nom_document: name })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showMessage('success', "Document supprimé de l'espace national.");
+                loadDocuments();
+            } else {
+                showMessage('error', data.message || "Erreur lors de la suppression.");
+            }
+        } catch (err) {
+            showMessage('error', 'Erreur réseau lors de la suppression.');
+        }
+    }
+
+    // Démarrage automatique
+    if (token && userUuid) { loadDocuments(); }
+</script>
+</body>
+</html>

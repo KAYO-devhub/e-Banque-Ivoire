@@ -80,7 +80,8 @@ export const loginUser = async (
             nom: user.nom,
             prenom: user.prenom,
             role: user.role
-        }
-    };
+        },
+        
+    }
 };
 

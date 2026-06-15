@@ -27,3 +27,19 @@ ADD CONSTRAINT fk_documents_user_id
 FOREIGN KEY (user_id) REFERENCES users(uuid);
 
 -- @block
+INSERT INTO users (
+    uuid,
+    nom,
+    prenom,
+    email,
+    password,
+    role
+)
+VALUES (
+    UUID(),
+    'Administrateur',
+    'Principal',
+    'admin@zeropapier.ci',
+    '$2b$10$n2QP6nL45dPn7XxqhBhWxOaRmwDhWsXKq1pS53ORo8/iKqVvanvfy',
+    'ADMIN'
+);

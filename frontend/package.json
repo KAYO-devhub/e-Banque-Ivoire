@@ -1,0 +1,12 @@
+{
+  "name": "zero-papier-web-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "jscanify": "^1.4.2",
+    "serve": "^14.2.3"
+  }
+}
