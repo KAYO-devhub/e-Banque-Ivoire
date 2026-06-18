@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://192.168.1.29:3000';
 
 function getHeaders(isMultipart = false) {
   const token = localStorage.getItem('userToken');

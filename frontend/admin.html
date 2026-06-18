@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zéro Papier CI - Espace Administration</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
   <div class="container">
@@ -19,70 +20,130 @@
     </nav>
 
     <main>
-      <h2>Contrôle de validité des pièces</h2>
+      <h2>Contrôle de validité des pièces par QR Code</h2>
       <p style="font-size:14px; color:#555; margin-bottom: 15px;">
-        Interrogez instantanément la signature électronique ou le code d'un document pour valider son intégrité auprès des ministères.
+        Scannez le QR code généré sur l'application du citoyen pour obtenir une autorisation de consultation de ses documents.
       </p>
 
-      <form id="verifyForm">
-        <div class="form-group">
-          <label for="qrData">Entrez la clé de hachage du QR Code</label>
-          <input type="text" id="qrData" required placeholder="Ex: QR-98765-XYZ-CI">
-        </div>
-        <button type="submit" class="btn btn-success" id="verifyBtn">Vérifier l'authenticité</button>
-      </form>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin: 20px 0;">
+        <div id="reader" style="width: 100%; max-width: 350px; border-radius: 8px; overflow: hidden;"></div>
+        <button class="btn btn-success" id="startScanBtn">Ouvrir le Scanner</button>
+      </div>
 
-      <div id="resultBox" class="hidden" style="margin-top: 25px;"></div>
+      <div id="status-message" style="margin-top: 15px; font-weight: bold; color: #FF6B00; text-align: center;"></div>
+
+      <div id="received-documents" style="display: none; margin-top: 25px;" class="card">
+          <h3 style="color: #009A44; margin-bottom: 10px;">📋 Documents partagés par le citoyen :</h3>
+          <ul id="docs-list" style="list-style: none; padding: 0;"></ul>
+      </div>
     </main>
   </div>
 
-  <script type="module">
-    import { checkAuth } from './js/app.js';
-    import { documentAPI } from './js/api.js';
+  <script>
+    // ⚠️ METS ICI TA VRAIE IP DE PC POUR QUE TON TÉLÉPHONE S'Y CONNECTE
+    const API_URL = "http://192.168.1.29:3000"; 
 
-    const { user } = checkAuth(true);
+    // 1. Blocage strict de sécurité côté client (Vérification Admin)
+    const user = JSON.parse(localStorage.getItem('userData'));
+    const token = localStorage.getItem('token');
 
-    // Blocage strict de sécurité côté client
-    if (!user || user.role.toLowerCase() !== 'admin') {
+    if (!token || !user || user.role.toLowerCase() !== 'admin') {
       alert("Accès refusé : Zone réservée aux agents de l'administration.");
       window.location.href = 'index.html';
     }
 
-    const resultBox = document.getElementById('resultBox');
+    let currentRequestId = null;
+    let html5QrcodeScanner = null;
 
-    document.getElementById('verifyForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const qrData = document.getElementById('qrData').value;
-      const btn = document.getElementById('verifyBtn');
-
-      btn.disabled = true;
-      btn.textContent = "Interrogation du registre central d'État...";
-      resultBox.classList.add('hidden');
-
-      try {
-        const res = await documentAPI.verifyQR(qrData);
-        resultBox.className = "card admin-card";
-        resultBox.innerHTML = `
-          <div class="card-info">
-            <h3 style="color: var(--success);">✅ CERTIFICAT VALIDE</h3>
-            <p style="margin-top: 5px;"><strong>Réponse de l'infrastructure :</strong> ${res.message || 'Le document présenté est authentique.'}</p>
-          </div>
-        `;
-      } catch (err) {
-        resultBox.className = "card";
-        resultBox.style.borderLeftColor = "var(--danger)";
-        resultBox.innerHTML = `
-          <div class="card-info">
-            <h3 style="color: var(--danger);">❌ ALERTE CONTRÔLE : DOCUMENT NON RECONNU</h3>
-            <p style="margin-top: 5px;"><strong>Motif du rejet :</strong> ${err.message}</p>
-          </div>
-        `;
-      } finally {
-        resultBox.classList.remove('hidden');
-        btn.disabled = false;
-        btn.textContent = "Vérifier l'authenticité";
-      }
+    // Écouteur d'événement sur le bouton plutôt qu'un 'onclick' dans le HTML (Plus robuste)
+    document.getElementById('startScanBtn').addEventListener('click', () => {
+        startAdminScanner();
     });
+
+    function startAdminScanner() {
+        // Initialisation du scanner dans la div #reader
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        
+        html5QrcodeScanner.render(async (decodedText) => {
+            // Le QR code scanné contient l'UUID du client (decodedText)
+            html5QrcodeScanner.clear(); // Arrêt immédiat de la caméra après détection
+            
+            document.getElementById('status-message').innerText = "⏳ Demande envoyée. En attente de validation sur le téléphone du citoyen...";
+            
+            try {
+                // Création de la demande de partage sur le serveur backend
+                const res = await fetch(`${API_URL}/requests/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminUuid: user.uuid, clientUuid: decodedText })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    currentRequestId = data.requestId;
+                    // Lancement de la vérification régulière (polling) pour attendre la réponse
+                    waitForClientDocuments();
+                } else {
+                    document.getElementById('status-message').innerText = "❌ Impossible de créer la demande de partage.";
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('status-message').innerText = "❌ Connexion au serveur central impossible.";
+            }
+        }, (error) => {
+            // On ignore les échecs de lecture de frames vides pendant la recherche
+        });
+    }
+
+    function waitForClientDocuments() {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`${API_URL}/requests/check-admin/${currentRequestId}`);
+                const data = await res.json();
+                
+                if (data.status === 'accepted') {
+                    clearInterval(interval);
+                    displayReceivedDocuments(data.documents);
+                } else if (data.status === 'rejected') {
+                    clearInterval(interval);
+                    document.getElementById('status-message').innerText = "❌ Le citoyen a décliné la demande d'accès.";
+                }
+            } catch (e) { 
+                console.error("Erreur de synchronisation :", e); 
+            }
+        }, 3000); // Vérification toutes les 3 secondes
+    }
+
+    function displayReceivedDocuments(docs) {
+        document.getElementById('status-message').innerText = "✅ Autorisation accordée !";
+        const container = document.getElementById('received-documents');
+        const list = document.getElementById('docs-list');
+        
+        container.style.display = 'block';
+        list.innerHTML = '';
+        
+        if (!docs || docs.length === 0) {
+            list.innerHTML = '<li style="padding: 10px; color: #666;">Aucun document n\'a été sélectionné par le citoyen.</li>';
+            return;
+        }
+        
+        docs.forEach(doc => {
+            const li = document.createElement('li');
+            li.style.padding = "12px 10px";
+            li.style.borderBottom = "1px solid #E0E0E0";
+            li.style.display = "flex";
+            li.style.justifyContent = "space-between";
+            li.style.alignItems = "center";
+            
+            li.innerHTML = `
+                <span>📄 <strong>${doc.nom_document}</strong></span> 
+                <a href="${API_URL}/${doc.chemin_fichier}" download target="_blank" class="btn btn-success" style="padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 4px;">
+                    Ouvrir / Enregistrer
+                </a>
+            `;
+            list.appendChild(li);
+        });
+    }
   </script>
 </body>
 </html>

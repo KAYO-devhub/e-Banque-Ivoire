@@ -43,3 +43,14 @@ VALUES (
     '$2b$10$n2QP6nL45dPn7XxqhBhWxOaRmwDhWsXKq1pS53ORo8/iKqVvanvfy',
     'ADMIN'
 );
+
+--@block
+CREATE TABLE partages_temporaires (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    request_id VARCHAR(100) UNIQUE NOT NULL,
+    admin_uuid VARCHAR(100) NOT NULL,
+    client_uuid VARCHAR(100) NOT NULL,
+    status ENUM('en_attente', 'accepte', 'refuse') DEFAULT 'en_attente',
+    documents_partages JSON DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

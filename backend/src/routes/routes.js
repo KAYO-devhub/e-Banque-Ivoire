@@ -5,6 +5,8 @@ import { pool } from '../config/database.js'
 import { loginUser } from '../controllers/authControllers.js'
 import { verifyToken } from '../middleware/authMiddleware.js'
 import cors from 'cors'
+import crypto from 'crypto'
+import path from 'path'
 
 
 export const app = express()
@@ -15,6 +17,7 @@ app.use(cors({
     // Supprimez ou passez credentials à false
 }));
 
+app.use('/backend/src/uploads', express.static(path.join(process.cwd(), 'backend/src/uploads')));
 
 app.use(express.json())
 
@@ -156,4 +159,153 @@ app.delete("/deleteDocuments/:uuid",verifyToken,upload.single("monFichier"), asy
     }
     
 })
+
+// ==========================================
+// 1. L'ADMIN CREE LA DEMANDE APRES LE SCAN
+// ==========================================
+app.post('/requests/create', async (req, res) => {
+    try {
+        const { adminUuid, clientUuid } = req.body;
+        
+        // On génère un identifiant unique pour cette transaction
+        const requestId = crypto.randomUUID(); 
+
+        await pool.query(
+            `INSERT INTO partages_temporaires (request_id, admin_uuid, client_uuid, status) 
+             VALUES (?, ?, ?, 'en_attente')`,
+            [requestId, adminUuid, clientUuid]
+        );
+
+        res.status(200).json({ success: true, requestId });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur lors de la création de la demande" });
+    }
+});
+
+
+// ==========================================
+// 2. LE CLIENT VERIFIE S'IL A UNE DEMANDE
+// ==========================================
+app.get('/requests/check-client/:uuid', async (req, res) => {
+    try {
+        const clientUuid = req.params.uuid;
+
+        // On cherche la demande la plus récente en attente pour ce client
+        const [results] = await pool.query(
+            `SELECT request_id FROM partages_temporaires 
+             WHERE client_uuid = ? AND status = 'en_attente' 
+             ORDER BY created_at DESC LIMIT 1`,
+            [clientUuid]
+        );
+
+        if (results.length > 0) {
+            res.status(200).json({ hasRequest: true, requestId: results[0].request_id });
+        } else {
+            res.status(200).json({ hasRequest: false });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+
+// ==========================================
+// 3. LE CLIENT ACCEPTE ET ENVOIE SES DOCUMENTS
+// ==========================================
+app.post('/requests/accept', async (req, res) => {
+    try {
+        const { requestId, documents } = req.body;
+        
+        // documents est un tableau d'ID, ex: [1, 2, 3]
+        // On le convertit en chaîne JSON pour le stocker dans MySQL
+        const documentsJson = JSON.stringify(documents);
+
+        await pool.query(
+            `UPDATE partages_temporaires 
+             SET status = 'accepte', documents_partages = ? 
+             WHERE request_id = ?`,
+            [documentsJson, requestId]
+        );
+
+        res.status(200).json({ success: true, message: "Documents envoyés" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur lors de la validation" });
+    }
+});
+
+
+// ==========================================
+// 4. L'ADMIN VERIFIE LA REPONSE ET RECUPERE LES FICHIERS
+// ==========================================
+app.get('/requests/check-admin/:reqId', async (req, res) => {
+    try {
+        const reqId = req.params.reqId;
+
+        const [requests] = await pool.query(
+            `SELECT status, documents_partages FROM partages_temporaires WHERE request_id = ?`,
+            [reqId]
+        );
+
+        if (requests.length === 0) {
+            return res.status(404).json({ message: "Demande introuvable" });
+        }
+
+        const demande = requests[0];
+
+        // Si le client a accepté
+        if (demande.status === 'accepte') {
+            const docIds = demande.documents_partages; // Tableau des IDs [1, 2, 3]
+
+            if (!docIds || docIds.length === 0) {
+                return res.status(200).json({ status: 'accepted', documents: [] });
+            }
+
+            // On va chercher les vraies informations des documents dans ta table `documents`
+            // /!\ Assure-toi que les noms de colonnes correspondent à TA table documents (id, nom_document, chemin_fichier)
+            const [documents] = await pool.query(
+                `SELECT id, nom_document, chemin_fichier 
+                 FROM documents 
+                 WHERE id IN (?)`,
+                [docIds] // MySQL gère automatiquement le tableau avec le IN (?)
+            );
+
+            return res.status(200).json({ 
+                status: 'accepted', 
+                documents: documents 
+            });
+        } 
+        // Si c'est refusé
+        else if (demande.status === 'refuse') {
+            return res.status(200).json({ status: 'rejected' });
+        } 
+        // Si c'est toujours en attente
+        else {
+            return res.status(200).json({ status: 'pending' });
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+});
+
+// À ajouter dans ton fichier backend (ex: routes.js)
+app.post('/requests/reject', async (req, res) => {
+    try {
+        const { requestId } = req.body;
+        
+        await pool.query(
+            `UPDATE partages_temporaires SET status = 'refuse' WHERE request_id = ?`,
+            [requestId]
+        );
+
+        res.status(200).json({ success: true, message: "Demande refusée avec succès" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Erreur lors du traitement du refus" });
+    }
+});
 

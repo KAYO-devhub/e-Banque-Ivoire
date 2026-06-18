@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zéro Papiers - Espace Personnel</title>
-    <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/cirocosta/jscanify@master/dist/jscanify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --primary: #FF6B00;       /* Orange CI */
+            --primary: #FF6B00;
             --primary-hover: #E65A00;
-            --success: #009A44;       /* Vert CI */
+            --success: #009A44;
             --success-hover: #008038;
             --danger: #FF3B30;
             --background: #F4F4F6;
@@ -47,12 +46,12 @@
             margin-bottom: 30px;
         }
 
-        header h1 { 
-            font-size: 24px; 
-            color: var(--primary); 
+        header h1 {
+            font-size: 24px;
+            color: var(--primary);
             font-weight: 800;
         }
-        
+
         header .sub {
             font-size: 12px;
             color: var(--success);
@@ -61,10 +60,10 @@
             letter-spacing: 0.5px;
         }
 
-        /* ZONE DES MESSAGES (Succès / Erreur) */
         .alert-container {
             margin-bottom: 20px;
         }
+
         .alert {
             padding: 15px;
             border-radius: 8px;
@@ -74,10 +73,19 @@
             text-align: center;
             animation: fadeIn 0.3s ease;
         }
-        .alert-success { background-color: #E5F5EC; color: var(--success); border: 1px solid var(--success); }
-        .alert-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-        /* UI/UX RESPONSIVE GRID */
+        .alert-success {
+            background-color: #E5F5EC;
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .alert-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -98,8 +106,7 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
             transition: transform 0.2s;
         }
-        
-        /* Accents Orange et Vert sur les cartes de service */
+
         .card-upload { border-top: 5px solid var(--primary); }
         .card-manage { border-top: 5px solid var(--success); }
 
@@ -112,17 +119,28 @@
             font-weight: 700;
         }
 
-        /* Formulaire & Actions */
         .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
-        input[type="file"], input[type="text"] {
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="file"],
+        input[type="text"] {
             width: 100%;
             padding: 12px;
             border: 1px solid var(--border);
             border-radius: 6px;
             background-color: #FAFAFA;
         }
-        input:focus { outline: none; border-color: var(--primary); }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
 
         .btn {
             display: inline-block;
@@ -138,15 +156,19 @@
             text-align: center;
             margin-top: 10px;
         }
+
         .btn:hover { background-color: var(--primary-hover); }
         .btn-success { background-color: var(--success); }
         .btn-success:hover { background-color: var(--success-hover); }
         .btn-danger { background-color: var(--danger); }
         .btn-danger:hover { background-color: #e0241b; }
-        .btn-outline { background-color: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-outline {
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
         .btn-outline:hover { background-color: var(--background); }
 
-        /* Zone de prévisualisation Caméra */
         #camera-container {
             display: none;
             margin-top: 15px;
@@ -155,14 +177,15 @@
             padding: 10px;
             border-radius: 8px;
         }
+
         video, canvas {
             width: 100%;
             max-width: 400px;
             border-radius: 6px;
         }
 
-        /* Liste des Documents */
         .doc-list { list-style: none; }
+
         .doc-item {
             display: flex;
             flex-direction: column;
@@ -171,8 +194,9 @@
             border-radius: 8px;
             margin-bottom: 12px;
             background: #FAFAFA;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.01);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.01);
         }
+
         @media (min-width: 480px) {
             .doc-item {
                 flex-direction: row;
@@ -180,11 +204,20 @@
                 align-items: center;
             }
         }
+
         .doc-info { margin-bottom: 10px; }
-        @media (min-width: 480px) { .doc-info { margin-bottom: 0; } }
-        .doc-info strong { color: var(--text); font-size: 15px; }
-        
+
+        @media (min-width: 480px) {
+            .doc-info { margin-bottom: 0; }
+        }
+
+        .doc-info strong {
+            color: var(--text);
+            font-size: 15px;
+        }
+
         .doc-actions { display: flex; gap: 10px; }
+
         .doc-actions button {
             padding: 8px 14px;
             border-radius: 6px;
@@ -195,30 +228,115 @@
             transition: background 0.15s;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Modale */
+        #auth-request-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            border-top: 5px solid #FF6B00;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 450px;
+            width: 90%;
+        }
+
+        #auth-request-modal h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        #auth-request-modal p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        #doc-selection-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #E0E0E0;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            background: #FAFAFA;
+        }
+
+        #modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        #modal-actions .btn-reject {
+            background: #666;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        #modal-actions .btn-accept {
+            background: #009A44;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
+
     <header>
         <div>
             <h1>Zero Papiers Workspace</h1>
             <div class="sub">Ministère de la Transition Numérique • CI</div>
         </div>
-        <button class="btn btn-outline" style="width: auto; margin:0; padding: 10px 20px;" onclick="logout()">Déconnexion</button>
+        <button
+            class="btn btn-outline"
+            style="width: auto; margin: 0; padding: 10px 20px;"
+            onclick="logout()"
+        >
+            Déconnexion
+        </button>
     </header>
 
     <div class="alert-container">
         <div id="alert-success" class="alert alert-success"></div>
-        <div id="alert-danger" class="alert alert-danger"></div>
+        <div id="alert-danger"  class="alert alert-danger"></div>
     </div>
 
     <div class="dashboard-grid">
-        
+
+        <!-- Carte Upload -->
         <div class="card card-upload">
             <h2>📁 Service Disponible - Import & Scan</h2>
-            
+
             <div class="form-group">
                 <label>Importer un fichier existant :</label>
                 <input type="file" id="file-input">
@@ -230,43 +348,71 @@
             <div class="form-group">
                 <label>Scanner un document via la caméra :</label>
                 <button class="btn btn-success" onclick="startCamera()">Activer la Caméra</button>
-                
+
                 <div id="camera-container">
                     <video id="video" autoplay playsinline></video>
                     <button class="btn" onclick="captureAndScan()">Prendre la photo & Scanner</button>
-                    <canvas id="canvas" style="display:none;"></canvas>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                </div>
+
+                <div id="qr-section">
+                    <button class="btn btn-primary" onclick="generateMyQRCode()">Afficher mon QR Code</button>
+                    <div id="qrcode" style="margin-top: 15px;"></div>
                 </div>
             </div>
         </div>
 
+        <!-- Carte Gestion -->
         <div class="card card-manage">
             <h2>⚙️ Gestion de Documents</h2>
-            <div id="no-docs" style="color: var(--text-muted); font-style: italic;">Aucun document disponible dans votre espace national.</div>
+            <div id="no-docs" style="color: var(--text-muted); font-style: italic;">
+                Aucun document disponible dans votre espace national.
+            </div>
             <ul id="documents-container" class="doc-list"></ul>
         </div>
 
+    </div><!-- /.dashboard-grid -->
+
+    <!-- Modale demande d'autorisation -->
+    <div id="auth-request-modal">
+        <h3>🔒 Demande d'accès de l'administration</h3>
+        <p>
+            Un agent républicain a scanné votre code.
+            Sélectionnez les documents que vous acceptez de lui transmettre :
+        </p>
+
+        <div id="doc-selection-list">
+            <!-- Cases à cocher générées en JS -->
+        </div>
+
+        <div id="modal-actions">
+            <button class="btn-reject" onclick="rejectRequest()">Refuser</button>
+            <button class="btn-accept" onclick="acceptAndSendDocs()">Autoriser et Partager</button>
+        </div>
     </div>
-</div>
+
+    <div id="modal-overlay"></div>
+
+</div><!-- /.container -->
 
 <script>
-    const API_URL = "http://localhost:3000";
-    
-    // ✅ Récupération dynamique depuis le localStorage
-    const userUuid = localStorage.getItem('userUuid');
-    const token = localStorage.getItem('token');
+    const API_URL = 'http://192.168.1.29:3000';
 
-    // Sécurité : Redirection immédiate si non connecté
+    const userUuid = localStorage.getItem('userUuid');
+    const token    = localStorage.getItem('token');
+
+    // Redirection si non connecté
     if (!token || !userUuid) {
-        window.location.href = "login.html";
+        window.location.href = 'login.html';
     }
 
-    // Gestionnaire de notifications unifié
+    // ─── Notifications ────────────────────────────────────────────────────────
     function showMessage(type, text) {
         const successAlert = document.getElementById('alert-success');
-        const dangerAlert = document.getElementById('alert-danger');
-        
+        const dangerAlert  = document.getElementById('alert-danger');
+
         successAlert.style.display = 'none';
-        dangerAlert.style.display = 'none';
+        dangerAlert.style.display  = 'none';
 
         if (type === 'success') {
             successAlert.textContent = text;
@@ -275,23 +421,26 @@
             dangerAlert.textContent = text;
             dangerAlert.style.display = 'block';
         }
+
         setTimeout(() => {
             successAlert.style.display = 'none';
-            dangerAlert.style.display = 'none';
+            dangerAlert.style.display  = 'none';
         }, 5000);
     }
 
-    // Déconnexion officielle
+    // ─── Déconnexion ──────────────────────────────────────────────────────────
     function logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('userUuid');
-        window.location.href = "index.html";
+        window.location.href = 'index.html';
     }
 
-    // --- OPTION A : UPLOAD STANDARD ---
+    // ─── Upload standard ──────────────────────────────────────────────────────
     async function uploadFile() {
         const fileInput = document.getElementById('file-input');
-        if (!fileInput.files[0]) return showMessage('error', 'Veuillez choisir un fichier.');
+        if (!fileInput.files[0]) {
+            return showMessage('error', 'Veuillez choisir un fichier.');
+        }
 
         const formData = new FormData();
         formData.append('monFichier', fileInput.files[0]);
@@ -300,12 +449,13 @@
             const response = await fetch(`${API_URL}/documents/${userUuid}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
+                body: formData,
             });
             const data = await response.json();
+
             if (response.ok) {
-                showMessage('success', "Document téléversé et enregistré !");
-                fileInput.value = ""; // Clear input
+                showMessage('success', 'Document téléversé et enregistré !');
+                fileInput.value = '';
                 loadDocuments();
             } else {
                 showMessage('error', data.message || "Erreur lors de l'envoi.");
@@ -315,28 +465,29 @@
         }
     }
 
-    // --- OPTION B : SCAN VIA CAMERA & JSCANIFY ---
-
+    // ─── Scan via caméra ──────────────────────────────────────────────────────
     function startCamera() {
-        const container = document.getElementById('camera-container');
-        container.style.display = 'block';
-        
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        document.getElementById('camera-container').style.display = 'block';
+
+        navigator.mediaDevices
+            .getUserMedia({ video: { facingMode: 'environment' } })
             .then(stream => {
                 document.getElementById('video').srcObject = stream;
             })
-            .catch(err => showMessage('error', "Impossible d'accéder à la caméra de votre appareil."));
+            .catch(() => {
+                showMessage('error', "Impossible d'accéder à la caméra de votre appareil.");
+            });
     }
 
     async function captureAndScan() {
-        const video = document.getElementById('video');
+        const video  = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx    = canvas.getContext('2d');
 
-        canvas.width = video.videoWidth;
+        canvas.width  = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
         canvas.toBlob(async (blob) => {
             const formData = new FormData();
             formData.append('monFichier', blob, 'scanned_doc.jpg');
@@ -345,40 +496,41 @@
                 const response = await fetch(`${API_URL}/documents/scan/${userUuid}`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData
+                    body: formData,
                 });
                 const data = await response.json();
+
                 if (response.ok) {
-                    showMessage('success', "Document numérisé avec succès !");
+                    showMessage('success', 'Document numérisé avec succès !');
                     loadDocuments();
-                    // Éteindre le flux de la caméra
                     video.srcObject.getTracks().forEach(track => track.stop());
                     document.getElementById('camera-container').style.display = 'none';
                 } else {
-                    showMessage('error', data.message || "Le traitement du scan a échoué.");
+                    showMessage('error', data.message || 'Le traitement du scan a échoué.');
                 }
             } catch (err) {
                 showMessage('error', "Échec de l'envoi du document scanné.");
             }
         }, 'image/jpeg');
-      }
+    }
 
-    // --- CATEGORIE : GESTION DES DOCUMENTS (VIEW, UPDATE, DELETE) ---
+    // ─── Chargement des documents ─────────────────────────────────────────────
     async function loadDocuments() {
         try {
             const response = await fetch(`${API_URL}/getDocuments/${userUuid}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${token}` },
             });
             const docs = await response.json();
-            
+
             const container = document.getElementById('documents-container');
-            const noDocs = document.getElementById('no-docs');
-            container.innerHTML = "";
+            const noDocs    = document.getElementById('no-docs');
+            container.innerHTML = '';
 
             if (!docs || docs.length === 0) {
                 noDocs.style.display = 'block';
                 return;
             }
+
             noDocs.style.display = 'none';
 
             docs.forEach(doc => {
@@ -387,11 +539,23 @@
                 li.innerHTML = `
                     <div class="doc-info">
                         <strong>${doc.nom_document}</strong><br>
-                        <small style="color: var(--text-muted); font-weight: 500;">${doc.type_document}</small>
+                        <small style="color: var(--text-muted); font-weight: 500;">
+                            ${doc.type_document}
+                        </small>
                     </div>
                     <div class="doc-actions">
-                        <button style="background: #E5F5EC; color: var(--success);" onclick="renameDocument('${doc.nom_document}')">Modifier</button>
-                        <button style="background: #fee2e2; color: var(--danger);" onclick="deleteDocument('${doc.nom_document}')">Supprimer</button>
+                        <button
+                            style="background: #E5F5EC; color: var(--success);"
+                            onclick="renameDocument('${doc.nom_document}')"
+                        >
+                            Modifier
+                        </button>
+                        <button
+                            style="background: #fee2e2; color: var(--danger);"
+                            onclick="deleteDocument('${doc.nom_document}')"
+                        >
+                            Supprimer
+                        </button>
                     </div>
                 `;
                 container.appendChild(li);
@@ -401,57 +565,199 @@
         }
     }
 
+    // ─── Renommer un document ─────────────────────────────────────────────────
     async function renameDocument(oldName) {
-        const newName = prompt("Entrez le nouveau nom pour ce document :", oldName);
+        const newName = prompt('Entrez le nouveau nom pour ce document :', oldName);
         if (!newName || newName === oldName) return;
 
         try {
             const response = await fetch(`${API_URL}/updateDocuments/${userUuid}`, {
                 method: 'PUT',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ nom_document: oldName, nouveau_nom: newName })
+                body: JSON.stringify({ nom_document: oldName, nouveau_nom: newName }),
             });
             const data = await response.json();
+
             if (response.ok) {
-                showMessage('success', "Le document a été renommé avec succès !");
+                showMessage('success', 'Le document a été renommé avec succès !');
                 loadDocuments();
             } else {
-                showMessage('error', data.message || "Erreur lors de la modification.");
+                showMessage('error', data.message || 'Erreur lors de la modification.');
             }
         } catch (err) {
             showMessage('error', 'Erreur de communication lors de la modification.');
         }
     }
 
+    // ─── Supprimer un document ────────────────────────────────────────────────
     async function deleteDocument(name) {
-        if (!confirm(`Voulez-vous définitivement supprimer "${name}" de votre espace de stockage ?`)) return;
+        if (!confirm(`Voulez-vous définitivement supprimer "${name}" de votre espace de stockage ?`)) {
+            return;
+        }
 
         try {
             const response = await fetch(`${API_URL}/deleteDocuments/${userUuid}`, {
                 method: 'DELETE',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ nom_document: name })
+                body: JSON.stringify({ nom_document: name }),
             });
             const data = await response.json();
+
             if (response.ok) {
                 showMessage('success', "Document supprimé de l'espace national.");
                 loadDocuments();
             } else {
-                showMessage('error', data.message || "Erreur lors de la suppression.");
+                showMessage('error', data.message || 'Erreur lors de la suppression.');
             }
         } catch (err) {
             showMessage('error', 'Erreur réseau lors de la suppression.');
         }
     }
 
-    // Démarrage automatique
-    if (token && userUuid) { loadDocuments(); }
+    // ─── QR Code & polling admin ──────────────────────────────────────────────
+    let currentAdminRequest = null;
+
+    function generateMyQRCode() {
+        const qrContainer = document.getElementById('qrcode');
+        qrContainer.innerHTML = '';
+
+        new QRCode(qrContainer, {
+            text: userUuid,
+            width: 128,
+            height: 128,
+        });
+
+        startListeningForAdminRequests();
+    }
+
+    function startListeningForAdminRequests() {
+        setInterval(async () => {
+            try {
+                const res  = await fetch(`${API_URL}/requests/check-client/${userUuid}`);
+                const data = await res.json();
+
+                if (data.hasRequest && !currentAdminRequest) {
+                    currentAdminRequest = data.requestId;
+                    showDocumentSelection();
+                }
+            } catch (e) {
+                console.error('Erreur de vérification :', e);
+            }
+        }, 3000);
+    }
+
+    async function showDocumentSelection() {
+
+        document.getElementById('auth-request-modal').style.display = 'block';
+        document.getElementById('modal-overlay').style.display      = 'block';
+
+        const listContainer = document.getElementById('doc-selection-list');
+        listContainer.innerHTML = '⏳ Récupération de vos documents sécurisés...';
+
+        try {
+            const response = await fetch(`${API_URL}/getDocuments/${userUuid}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const documents = await response.json();
+
+            listContainer.innerHTML = '';
+
+            if (!documents || documents.length === 0) {
+                listContainer.innerHTML = `
+                    <p style="color: #666; text-align: center; margin-top: 10px;">
+                        Aucun document disponible dans votre coffre-fort digital.
+                    </p>
+                `;
+                return;
+            }
+
+            documents.forEach(doc => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; padding:8px 5px; border-bottom:1px solid #EEE;';
+                row.innerHTML = `
+                    <label style="display:flex; align-items:center; gap:12px; width:100%; cursor:pointer; font-size:15px;">
+                        <input
+                            type="checkbox"
+                            class="doc-checkbox"
+                            value="${doc.id}"
+                            style="width:18px; height:18px; accent-color:#009A44;"
+                        >
+                        <span>📄 <strong>${doc.nom_document}</strong></span>
+                    </label>
+                `;
+                listContainer.appendChild(row);
+            });
+        } catch (error) {
+            console.error('Erreur de récupération des documents :', error);
+            listContainer.innerHTML = `<p style="color: var(--danger);">Erreur réseau lors de la récupération.</p>`;
+        }
+    }
+
+    async function acceptAndSendDocs() {
+        const checkedBoxes   = document.querySelectorAll('.doc-checkbox:checked');
+        const selectedDocIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+        if (selectedDocIds.length === 0) {
+            alert('Veuillez sélectionner au moins un document à transmettre, ou cliquez sur Refuser.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/requests/accept`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestId: currentAdminRequest,
+                    documents: selectedDocIds,
+                }),
+            });
+
+            if (response.ok) {
+                alert(`✅ ${selectedDocIds.length} document(s) transmis avec succès à l'agent !`);
+                closeModal();
+            } else {
+                alert('Erreur lors de la validation du partage.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Impossible de joindre le serveur central.');
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('auth-request-modal').style.display = 'none';
+        document.getElementById('modal-overlay').style.display      = 'none';
+        currentAdminRequest = null;
+    }
+
+    async function rejectRequest() {
+    if (confirm("Êtes-vous sûr de vouloir refuser l'accès à vos documents ?")) {
+        try {
+            // 1. On informe immédiatement le serveur pour débloquer l'écran de l'admin
+            await fetch(`${API_URL}/requests/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestId: currentAdminRequest })
+            });
+        } catch (err) {
+            console.error("Erreur lors de l'envoi du refus au serveur :", err);
+        } finally {
+            // 2. Quoi qu'il arrive (même si le serveur est en panne), on ferme la modale chez le client
+            closeModal();
+        }
+    }
+}
+
+    // ─── Initialisation ───────────────────────────────────────────────────────
+    if (token && userUuid) {
+        loadDocuments();
+    }
 </script>
 </body>
 </html>
