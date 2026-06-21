@@ -21,6 +21,14 @@ app.use('/backend/src/uploads', express.static(path.join(process.cwd(), 'backend
 
 app.use(express.json())
 
+// Indique à Express que le contenu statique est dans le dossier 'frontend'
+app.use(express.static(path.join(__dirname, 'frontend')));
+
+// Route par défaut pour servir index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+});
+
 //Inscription et authentification des utilisateurs
 app.post("/register",async (req,res) => {
     try {
