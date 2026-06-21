@@ -309,3 +309,22 @@ app.post('/requests/reject', async (req, res) => {
     }
 });
 
+// Récupérer les informations publiques d'un utilisateur via son UUID
+app.get('/users/info/:uuid', async (req, res) => {
+    try {
+        // Assure-toi que le nom de ta table est bien "users" ou "utilisateurs" selon ta base de données
+        const [rows] = await pool.query(
+            'SELECT nom, prenom, email FROM users WHERE uuid = ?', 
+            [req.params.uuid]
+        );
+
+        if (rows.length > 0) {
+            res.status(200).json({ success: true, user: rows[0] });
+        } else {
+            res.status(404).json({ success: false, message: "Citoyen introuvable." });
+        }
+    } catch (error) {
+        console.error("Erreur récupération infos utilisateur :", error);
+        res.status(500).json({ success: false, message: "Erreur serveur." });
+    }
+});

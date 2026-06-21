@@ -340,7 +340,7 @@
             <div class="form-group">
                 <label>Importer un fichier existant :</label>
                 <input type="file" id="file-input" class="btn">
-                <button class="btn" onclick="uploadFile()">Téléverser le document</button>
+                <button class="btn" onclick="uploadFile(event)">Envoyer</button>
             </div>
 
             <hr style="margin: 25px 0; border: 0; border-top: 1px dashed var(--border);">
@@ -396,7 +396,7 @@
 </div><!-- /.container -->
 
 <script>
-    const API_URL = 'http://192.168.1.29:3000'
+    const API_URL = window.location.origin
 
     const userUuid = localStorage.getItem('userUuid');
     const token    = localStorage.getItem('token');
@@ -436,34 +436,52 @@
     }
 
     // ─── Upload standard ──────────────────────────────────────────────────────
-    async function uploadFile() {
-        const fileInput = document.getElementById('file-input');
-        if (!fileInput.files[0]) {
-            return showMessage('error', 'Veuillez choisir un fichier.');
-        }
-
-        const formData = new FormData();
-        formData.append('monFichier', fileInput.files[0]);
-
-        try {
-            const response = await fetch(`${API_URL}/documents/${userUuid}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData,
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                showMessage('success', 'Document téléversé et enregistré !');
-                fileInput.value = '';
-                loadDocuments();
-            } else {
-                showMessage('error', data.message || "Erreur lors de l'envoi.");
-            }
-        } catch (err) {
-            showMessage('error', 'Erreur de connexion avec le serveur.');
-        }
+    // On ajoute 'event' en paramètre pour pouvoir bloquer le rechargement de la page
+  async function uploadFile(event) {
+    // 1. On bloque le comportement par défaut du navigateur (très important !)
+    if (event) {
+        event.preventDefault();
     }
+
+    const fileInput = document.getElementById('file-input');
+    if (!fileInput.files[0]) {
+        return showMessage('error', 'Veuillez choisir un fichier.');
+    }
+
+    const formData = new FormData();
+    formData.append('monFichier', fileInput.files[0]);
+
+    try {
+        const response = await fetch(`${API_URL}/documents/${userUuid}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData,
+        });
+
+        // 2. SÉCURITÉ : On vérifie si la réponse est bien du JSON avant de la parser
+        const contentType = response.headers.get("content-type");
+        let data = {};
+        
+        if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
+        } else {
+            // Si le backend renvoie du texte simple, on l'attrape sans faire planter le code
+            data.message = await response.text(); 
+        }
+
+        if (response.ok) {
+            showMessage('success', 'Document téléversé et enregistré !');
+            fileInput.value = ''; // On vide le champ
+            loadDocuments();      // Rafraîchit la liste des documents instantanément
+        } else {
+            showMessage('error', data.message || "Erreur lors de l'envoi.");
+        }
+    } catch (err) {
+        // 3. On affiche la VRAIE erreur dans la console (F12) pour comprendre le plantage
+        console.error("Erreur technique capturée :", err);
+        showMessage('error', 'Erreur de connexion avec le serveur.');
+    }
+}
 
     // ─── Scan via caméra ──────────────────────────────────────────────────────
     function startCamera() {
