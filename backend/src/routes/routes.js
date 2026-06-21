@@ -6,7 +6,7 @@ import { loginUser } from '../controllers/authControllers.js'
 import { verifyToken } from '../middleware/authMiddleware.js'
 import cors from 'cors'
 import crypto from 'crypto'
-import {path, dirname} from 'path'
+import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 
@@ -23,6 +23,8 @@ app.use('/backend/src/uploads', express.static(path.join(process.cwd(), 'backend
 app.use(express.json())
 
 // Indique à Express que le contenu statique est dans le dossier 'frontend'
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Route par défaut pour servir index.html
