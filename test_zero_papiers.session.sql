@@ -54,3 +54,6 @@ CREATE TABLE partages_temporaires (
     documents_partages JSON DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+--@block
+SELECT chemin_fichier from documents WHERE id = 1;

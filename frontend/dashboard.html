@@ -314,7 +314,7 @@
 
     <header>
         <div>
-            <h1>Zero Papiers Workspace</h1>
+            <h1>e-Banque Ivoire Workspace</h1>
             <div class="sub">Ministère de la Transition Numérique • CI</div>
         </div>
         <button
@@ -339,7 +339,7 @@
 
             <div class="form-group">
                 <label>Importer un fichier existant :</label>
-                <input type="file" id="file-input">
+                <input type="file" id="file-input" class="btn">
                 <button class="btn" onclick="uploadFile()">Téléverser le document</button>
             </div>
 
@@ -396,7 +396,7 @@
 </div><!-- /.container -->
 
 <script>
-    const API_URL = 'http://192.168.1.29:3000';
+    const API_URL = 'http://192.168.1.29:3000'
 
     const userUuid = localStorage.getItem('userUuid');
     const token    = localStorage.getItem('token');
