@@ -6,7 +6,8 @@ import { loginUser } from '../controllers/authControllers.js'
 import { verifyToken } from '../middleware/authMiddleware.js'
 import cors from 'cors'
 import crypto from 'crypto'
-import path from 'path'
+import {path, dirname} from 'path'
+import { fileURLToPath } from 'url'
 
 
 export const app = express()

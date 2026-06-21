@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv' 
-dotenv.config({path: '/home/kayo/Documents/projetu_zero_papiers/backend/.env'})
+import 'dotenv/config'
 
 export const verifyToken = (req, res, next) => {
 

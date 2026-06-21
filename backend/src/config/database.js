@@ -1,6 +1,5 @@
 import mysql2 from 'mysql2'
-import dotenv from 'dotenv' 
-dotenv.config({path: '/home/kayo/Documents/projetu_zero_papiers/backend/.env'})
+import 'dotenv/config'
 
 export const pool = mysql2.createPool({
     host:process.env.MYSQL_HOST,
