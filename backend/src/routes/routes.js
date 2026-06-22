@@ -8,7 +8,7 @@ import cors from 'cors'
 import crypto from 'crypto'
 import { dirname } from 'path'
 import path from 'path'
-import { fileURLToPath } from 'url'
+
 
 
 export const app = express()
@@ -24,13 +24,12 @@ app.use('/backend/src/uploads', express.static(path.join(process.cwd(), 'backend
 app.use(express.json())
 
 // Indique à Express que le contenu statique est dans le dossier 'frontend'
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-app.use(express.static(path.join(__dirname, 'frontend')));
+
+app.use(express.static(path.join(process.cwd(), 'frontend')));
 
 // Route par défaut pour servir index.html
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+    res.sendFile(path.join(process.cwd(), 'frontend', 'index.html'));
 });
 
 //Inscription et authentification des utilisateurs
