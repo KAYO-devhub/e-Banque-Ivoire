@@ -7,6 +7,7 @@ import { verifyToken } from '../middleware/authMiddleware.js'
 import cors from 'cors'
 import crypto from 'crypto'
 import { dirname } from 'path'
+import path from 'path'
 import { fileURLToPath } from 'url'
 
 

@@ -1,8 +1,7 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken' 
 import { pool } from '../config/database.js'
-import dotenv from 'dotenv' 
-dotenv.config({path: '/home/kayo/Documents/projetu_zero_papiers/backend/.env'})
+import 'dotenv/config'
 
 export async function hashPassword(plainPassword) {
     const saltRounds = 10
