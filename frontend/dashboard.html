@@ -233,8 +233,8 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* Modale */
-        #auth-request-modal {
+        /* Modales communes */
+        .custom-modal {
             display: none;
             position: fixed;
             top: 50%;
@@ -243,23 +243,51 @@
             background: #fff;
             padding: 25px;
             border-radius: 12px;
-            border-top: 5px solid #FF6B00;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             max-width: 450px;
             width: 90%;
         }
 
-        #auth-request-modal h3 {
+        .custom-modal h3 {
             color: #333;
             margin-bottom: 10px;
         }
 
-        #auth-request-modal p {
+        .custom-modal p {
             font-size: 14px;
             color: #666;
             margin-bottom: 15px;
         }
+
+        .modal-actions-container {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-reject {
+            background: #666;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-accept {
+            background: #009A44;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #auth-request-modal { border-top: 5px solid #FF6B00; }
+        #naming-modal { border-top: 5px solid #009A44; }
 
         #doc-selection-list {
             max-height: 200px;
@@ -271,29 +299,23 @@
             background: #FAFAFA;
         }
 
-        #modal-actions {
+        .radio-group label {
             display: flex;
+            align-items: center;
             gap: 10px;
-            justify-content: flex-end;
-        }
-
-        #modal-actions .btn-reject {
-            background: #666;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
+            padding: 8px;
             cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
         }
-
-        #modal-actions .btn-accept {
-            background: #009A44;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
+        .radio-group label:hover {
+            background: #f0f0f0;
+        }
+        .radio-group input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--success);
             cursor: pointer;
-            font-weight: bold;
         }
 
         #modal-overlay {
@@ -317,11 +339,7 @@
             <h1>e-Banque Ivoire Workspace</h1>
             <div class="sub">Ministère de la Transition Numérique • CI</div>
         </div>
-        <button
-            class="btn btn-outline"
-            style="width: auto; margin: 0; padding: 10px 20px;"
-            onclick="logout()"
-        >
+        <button class="btn btn-outline" style="width: auto; margin: 0; padding: 10px 20px;" onclick="logout()">
             Déconnexion
         </button>
     </header>
@@ -333,14 +351,13 @@
 
     <div class="dashboard-grid">
 
-        <!-- Carte Upload -->
         <div class="card card-upload">
             <h2>📁 Service Disponible - Import & Scan</h2>
 
             <div class="form-group">
                 <label>Importer un fichier existant :</label>
                 <input type="file" id="file-input" class="btn">
-                <button class="btn" onclick="uploadFile(event)">Envoyer</button>
+                <button class="btn" onclick="prepareUpload(event)">Envoyer</button>
             </div>
 
             <hr style="margin: 25px 0; border: 0; border-top: 1px dashed var(--border);">
@@ -351,7 +368,7 @@
 
                 <div id="camera-container">
                     <video id="video" autoplay playsinline></video>
-                    <button class="btn" onclick="captureAndScan()">Prendre la photo & Scanner</button>
+                    <button class="btn" onclick="captureAndPrepareScan()">Prendre la photo & Scanner</button>
                     <canvas id="canvas" style="display: none;"></canvas>
                 </div>
 
@@ -362,30 +379,51 @@
             </div>
         </div>
 
-        <!-- Carte Gestion -->
         <div class="card card-manage">
             <h2>⚙️ Gestion de Documents</h2>
+            
+            <div class="form-group">
+                <input type="text" id="search-doc-input" placeholder="🔍 Rechercher un document..." onkeyup="filterDocuments()">
+            </div>
+
             <div id="no-docs" style="color: var(--text-muted); font-style: italic;">
                 Aucun document disponible dans votre espace national.
             </div>
             <ul id="documents-container" class="doc-list"></ul>
         </div>
 
-    </div><!-- /.dashboard-grid -->
+    </div>
 
-    <!-- Modale demande d'autorisation -->
-    <div id="auth-request-modal">
-        <h3>🔒 Demande d'accès de l'administration</h3>
-        <p>
-            Un agent républicain a scanné votre code.
-            Sélectionnez les documents que vous acceptez de lui transmettre :
-        </p>
-
-        <div id="doc-selection-list">
-            <!-- Cases à cocher générées en JS -->
+    <div id="naming-modal" class="custom-modal">
+        <h3>Catégorie du document</h3>
+        <p>Veuillez préciser la nature de ce document avant l'envoi :</p>
+        
+        <div class="radio-group" id="naming-form">
+            <label><input type="radio" name="docType" value="CNI" checked> CNI</label>
+            <label><input type="radio" name="docType" value="Extrait d'acte de naissance"> Extrait d'acte de naissance</label>
+            <label><input type="radio" name="docType" value="passeport"> Passeport</label>
+            <label><input type="radio" name="docType" value="permit de conduire"> Permis de conduire</label>
+            <label><input type="radio" name="docType" value="certificat de nationalité"> Certificat de nationalité</label>
         </div>
 
-        <div id="modal-actions">
+        <div class="modal-actions-container">
+            <button class="btn-reject" onclick="cancelUpload()">Annuler</button>
+            <button class="btn-accept" onclick="confirmUpload()">Valider et Envoyer</button>
+        </div>
+    </div>
+
+    <div id="auth-request-modal" class="custom-modal">
+        <h3>🔒 Demande d'accès de l'administration</h3>
+        <p>Un agent républicain a scanné votre code. Sélectionnez les documents que vous acceptez de lui transmettre :</p>
+        
+        <div class="form-group" style="margin-bottom: 15px;">
+            <input type="text" id="search-modal-input" placeholder="🔍 Filtrer les documents à envoyer..." 
+                   onkeyup="filterModalDocuments()" style="padding: 10px; width: 100%; border: 1px solid var(--border); border-radius: 6px;">
+        </div>
+
+        <div id="doc-selection-list"></div>
+        
+        <div class="modal-actions-container">
             <button class="btn-reject" onclick="rejectRequest()">Refuser</button>
             <button class="btn-accept" onclick="acceptAndSendDocs()">Autoriser et Partager</button>
         </div>
@@ -393,20 +431,19 @@
 
     <div id="modal-overlay"></div>
 
-</div><!-- /.container -->
+</div>
 
 <script>
-    const API_URL = window.location.origin
+    const API_URL = window.location.origin;
 
     const userUuid = localStorage.getItem('userUuid');
     const token    = localStorage.getItem('token');
 
-    // Redirection si non connecté
     if (!token || !userUuid) {
         window.location.href = 'login.html';
     }
 
-    // ─── Notifications ────────────────────────────────────────────────────────
+    // ─── Notifications ───
     function showMessage(type, text) {
         const successAlert = document.getElementById('alert-success');
         const dangerAlert  = document.getElementById('alert-danger');
@@ -421,69 +458,136 @@
             dangerAlert.textContent = text;
             dangerAlert.style.display = 'block';
         }
-
         setTimeout(() => {
             successAlert.style.display = 'none';
             dangerAlert.style.display  = 'none';
         }, 5000);
     }
 
-    // ─── Déconnexion ──────────────────────────────────────────────────────────
     function logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('userUuid');
         window.location.href = 'index.html';
     }
 
-    // ─── Upload standard ──────────────────────────────────────────────────────
-    // On ajoute 'event' en paramètre pour pouvoir bloquer le rechargement de la page
-  async function uploadFile(event) {
-    // 1. On bloque le comportement par défaut du navigateur (très important !)
-    if (event) {
-        event.preventDefault();
-    }
+    // ─── Fonctionnalité de Recherche (Dashboard Principal) ───
+    function filterDocuments() {
+        const filterText = document.getElementById('search-doc-input').value.toLowerCase();
+        const docItems = document.querySelectorAll('.doc-item');
 
-    const fileInput = document.getElementById('file-input');
-    if (!fileInput.files[0]) {
-        return showMessage('error', 'Veuillez choisir un fichier.');
-    }
-
-    const formData = new FormData();
-    formData.append('monFichier', fileInput.files[0]);
-
-    try {
-        const response = await fetch(`${API_URL}/documents/${userUuid}`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData,
+        docItems.forEach(item => {
+            const docName = item.querySelector('.doc-info strong').textContent.toLowerCase();
+            if (docName.includes(filterText)) {
+                item.style.display = window.innerWidth >= 480 ? 'flex' : 'block';
+            } else {
+                item.style.display = 'none';
+            }
         });
-
-        // 2. SÉCURITÉ : On vérifie si la réponse est bien du JSON avant de la parser
-        const contentType = response.headers.get("content-type");
-        let data = {};
-        
-        if (contentType && contentType.includes("application/json")) {
-            data = await response.json();
-        } else {
-            // Si le backend renvoie du texte simple, on l'attrape sans faire planter le code
-            data.message = await response.text(); 
-        }
-
-        if (response.ok) {
-            showMessage('success', 'Document téléversé et enregistré !');
-            fileInput.value = ''; // On vide le champ
-            loadDocuments();      // Rafraîchit la liste des documents instantanément
-        } else {
-            showMessage('error', data.message || "Erreur lors de l'envoi.");
-        }
-    } catch (err) {
-        // 3. On affiche la VRAIE erreur dans la console (F12) pour comprendre le plantage
-        console.error("Erreur technique capturée :", err);
-        showMessage('error', 'Erreur de connexion avec le serveur.');
     }
-}
 
-    // ─── Scan via caméra ──────────────────────────────────────────────────────
+    // ─── Variables globales pour l'upload ───
+    let pendingUploadData = null;
+    let pendingUploadEndpoint = '';
+
+    // ─── Préparation de l'upload standard ───
+    function prepareUpload(event) {
+        if (event) event.preventDefault();
+
+        const fileInput = document.getElementById('file-input');
+        if (!fileInput.files[0]) {
+            return showMessage('error', 'Veuillez d\'abord choisir un fichier.');
+        }
+
+        pendingUploadData = fileInput.files[0];
+        pendingUploadEndpoint = `${API_URL}/documents/${userUuid}`;
+        
+        document.getElementById('naming-modal').style.display = 'block';
+        document.getElementById('modal-overlay').style.display = 'block';
+    }
+
+    // ─── Préparation de l'upload depuis un scan caméra ───
+    function captureAndPrepareScan() {
+        const video  = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx    = canvas.getContext('2d');
+
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+            pendingUploadData = blob;
+            pendingUploadEndpoint = `${API_URL}/documents/scan/${userUuid}`;
+            
+            document.getElementById('naming-modal').style.display = 'block';
+            document.getElementById('modal-overlay').style.display = 'block';
+
+            if(video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('camera-container').style.display = 'none';
+        }, 'image/jpeg');
+    }
+
+    // ─── Annuler l'upload ───
+    function cancelUpload() {
+        document.getElementById('naming-modal').style.display = 'none';
+        document.getElementById('modal-overlay').style.display = 'none';
+        pendingUploadData = null;
+        pendingUploadEndpoint = '';
+    }
+
+    // ─── Validation et exécution de l'upload ───
+    async function confirmUpload() {
+        if (!pendingUploadData) return cancelUpload();
+
+        const selectedType = document.querySelector('input[name="docType"]:checked').value;
+        const formData = new FormData();
+
+        // Envoi obligatoire du type de document au backend
+        formData.append('typeDocument', selectedType);
+
+        if (pendingUploadData instanceof File) {
+            formData.append('monFichier', pendingUploadData);
+        } else {
+            formData.append('monFichier', pendingUploadData, 'scanned_doc.jpg');
+        }
+
+        document.getElementById('naming-modal').style.display = 'none';
+        document.getElementById('modal-overlay').style.display = 'none';
+
+        try {
+            const response = await fetch(pendingUploadEndpoint, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+
+            const contentType = response.headers.get("content-type");
+            let data = {};
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                data.message = await response.text(); 
+            }
+
+            if (response.ok) {
+                showMessage('success', 'Document téléversé et nommé avec succès !');
+                document.getElementById('file-input').value = ''; 
+                loadDocuments(); 
+            } else {
+                showMessage('error', data.message || "Erreur lors de l'envoi.");
+            }
+        } catch (err) {
+            console.error(err);
+            showMessage('error', 'Erreur de connexion avec le serveur.');
+        } finally {
+            pendingUploadData = null;
+            pendingUploadEndpoint = '';
+        }
+    }
+
+    // ─── Camera Init ───
     function startCamera() {
         document.getElementById('camera-container').style.display = 'block';
 
@@ -497,42 +601,7 @@
             });
     }
 
-    async function captureAndScan() {
-        const video  = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx    = canvas.getContext('2d');
-
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob(async (blob) => {
-            const formData = new FormData();
-            formData.append('monFichier', blob, 'scanned_doc.jpg');
-
-            try {
-                const response = await fetch(`${API_URL}/documents/scan/${userUuid}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    body: formData,
-                });
-                const data = await response.json();
-
-                if (response.ok) {
-                    showMessage('success', 'Document numérisé avec succès !');
-                    loadDocuments();
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                    document.getElementById('camera-container').style.display = 'none';
-                } else {
-                    showMessage('error', data.message || 'Le traitement du scan a échoué.');
-                }
-            } catch (err) {
-                showMessage('error', "Échec de l'envoi du document scanné.");
-            }
-        }, 'image/jpeg');
-    }
-
-    // ─── Chargement des documents ─────────────────────────────────────────────
+    // ─── Chargement & Gestion des documents ───
     async function loadDocuments() {
         try {
             const response = await fetch(`${API_URL}/getDocuments/${userUuid}`, {
@@ -543,6 +612,8 @@
             const container = document.getElementById('documents-container');
             const noDocs    = document.getElementById('no-docs');
             container.innerHTML = '';
+            
+            document.getElementById('search-doc-input').value = '';
 
             if (!docs || docs.length === 0) {
                 noDocs.style.display = 'block';
@@ -562,18 +633,8 @@
                         </small>
                     </div>
                     <div class="doc-actions">
-                        <button
-                            style="background: #E5F5EC; color: var(--success);"
-                            onclick="renameDocument('${doc.nom_document}')"
-                        >
-                            Modifier
-                        </button>
-                        <button
-                            style="background: #fee2e2; color: var(--danger);"
-                            onclick="deleteDocument('${doc.nom_document}')"
-                        >
-                            Supprimer
-                        </button>
+                        <button style="background: #E5F5EC; color: var(--success);" onclick="renameDocument('${doc.nom_document}')">Modifier</button>
+                        <button style="background: #fee2e2; color: var(--danger);" onclick="deleteDocument('${doc.nom_document}')">Supprimer</button>
                     </div>
                 `;
                 container.appendChild(li);
@@ -583,7 +644,6 @@
         }
     }
 
-    // ─── Renommer un document ─────────────────────────────────────────────────
     async function renameDocument(oldName) {
         const newName = prompt('Entrez le nouveau nom pour ce document :', oldName);
         if (!newName || newName === oldName) return;
@@ -610,7 +670,6 @@
         }
     }
 
-    // ─── Supprimer un document ────────────────────────────────────────────────
     async function deleteDocument(name) {
         if (!confirm(`Voulez-vous définitivement supprimer "${name}" de votre espace de stockage ?`)) {
             return;
@@ -638,19 +697,13 @@
         }
     }
 
-    // ─── QR Code & polling admin ──────────────────────────────────────────────
+    // ─── QR Code & Demandes de l'Admin ───
     let currentAdminRequest = null;
 
     function generateMyQRCode() {
         const qrContainer = document.getElementById('qrcode');
         qrContainer.innerHTML = '';
-
-        new QRCode(qrContainer, {
-            text: userUuid,
-            width: 128,
-            height: 128,
-        });
-
+        new QRCode(qrContainer, { text: userUuid, width: 128, height: 128 });
         startListeningForAdminRequests();
     }
 
@@ -659,7 +712,6 @@
             try {
                 const res  = await fetch(`${API_URL}/requests/check-client/${userUuid}`);
                 const data = await res.json();
-
                 if (data.hasRequest && !currentAdminRequest) {
                     currentAdminRequest = data.requestId;
                     showDocumentSelection();
@@ -670,10 +722,25 @@
         }, 3000);
     }
 
-    async function showDocumentSelection() {
+    // ─── Fonctionnalité de Recherche (Modale Admin) ───
+    function filterModalDocuments() {
+        const filterText = document.getElementById('search-modal-input').value.toLowerCase();
+        const docLabels = document.querySelectorAll('#doc-selection-list label');
 
+        docLabels.forEach(label => {
+            const docName = label.querySelector('span').textContent.toLowerCase();
+            // On cible l'élément parent de la ligne (le div) pour le masquer ou l'afficher
+            label.parentElement.style.display = docName.includes(filterText) ? 'flex' : 'none';
+        });
+    }
+
+    async function showDocumentSelection() {
         document.getElementById('auth-request-modal').style.display = 'block';
         document.getElementById('modal-overlay').style.display      = 'block';
+
+        // Réinitialisation de la recherche au moment de l'ouverture
+        const searchInput = document.getElementById('search-modal-input');
+        if (searchInput) searchInput.value = '';
 
         const listContainer = document.getElementById('doc-selection-list');
         listContainer.innerHTML = '⏳ Récupération de vos documents sécurisés...';
@@ -683,15 +750,13 @@
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             const documents = await response.json();
-
             listContainer.innerHTML = '';
 
             if (!documents || documents.length === 0) {
                 listContainer.innerHTML = `
                     <p style="color: #666; text-align: center; margin-top: 10px;">
                         Aucun document disponible dans votre coffre-fort digital.
-                    </p>
-                `;
+                    </p>`;
                 return;
             }
 
@@ -700,12 +765,7 @@
                 row.style.cssText = 'display:flex; align-items:center; padding:8px 5px; border-bottom:1px solid #EEE;';
                 row.innerHTML = `
                     <label style="display:flex; align-items:center; gap:12px; width:100%; cursor:pointer; font-size:15px;">
-                        <input
-                            type="checkbox"
-                            class="doc-checkbox"
-                            value="${doc.id}"
-                            style="width:18px; height:18px; accent-color:#009A44;"
-                        >
+                        <input type="checkbox" class="doc-checkbox" value="${doc.id}" style="width:18px; height:18px; accent-color:#009A44;">
                         <span>📄 <strong>${doc.nom_document}</strong></span>
                     </label>
                 `;
@@ -755,24 +815,22 @@
     }
 
     async function rejectRequest() {
-    if (confirm("Êtes-vous sûr de vouloir refuser l'accès à vos documents ?")) {
-        try {
-            // 1. On informe immédiatement le serveur pour débloquer l'écran de l'admin
-            await fetch(`${API_URL}/requests/reject`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ requestId: currentAdminRequest })
-            });
-        } catch (err) {
-            console.error("Erreur lors de l'envoi du refus au serveur :", err);
-        } finally {
-            // 2. Quoi qu'il arrive (même si le serveur est en panne), on ferme la modale chez le client
-            closeModal();
+        if (confirm("Êtes-vous sûr de vouloir refuser l'accès à vos documents ?")) {
+            try {
+                await fetch(`${API_URL}/requests/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId: currentAdminRequest })
+                });
+            } catch (err) {
+                console.error("Erreur lors de l'envoi du refus au serveur :", err);
+            } finally {
+                closeModal();
+            }
         }
     }
-}
 
-    // ─── Initialisation ───────────────────────────────────────────────────────
+    // ─── Initialisation ───
     if (token && userUuid) {
         loadDocuments();
     }

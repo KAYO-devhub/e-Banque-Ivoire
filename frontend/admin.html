@@ -22,7 +22,7 @@
  <main>
   <h2>Contrôle de validité des pièces par QR Code</h2>
   <p style="font-size:14px; color:#555; margin-bottom: 15px;">
-    Scannez le QR code généré sur l'application du citoyen pour obtenir une autorisation de consultation de ses documents.
+    Scannez le QR code du citoyen pour demander l'accès à ses documents.
   </p>
 
   <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin: 20px 0;">
@@ -32,211 +32,187 @@
 
   <div id="status-message" style="margin-top: 15px; font-weight: bold; color: #FF6B00; text-align: center;"></div>
 
-  <div id="client-info-section" style="display: none; margin-top: 25px; padding: 15px; background: #eef7f2; border-radius: 8px; border-left: 5px solid #009A44; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+  <div id="client-info-section" style="display: none; margin-top: 25px; padding: 15px; background: #eef7f2; border-radius: 8px; border-left: 5px solid #009A44;">
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
           <div>
               <h3 style="margin-top: 0; color: #009A44; margin-bottom: 15px;">👤 Identité du Citoyen</h3>
-              <p style="margin: 5px 0;"><strong>Nom :</strong> <span id="client-nom">...</span></p>
-              <p style="margin: 5px 0;"><strong>Prénom :</strong> <span id="client-prenom">...</span></p>
-              <p style="margin: 5px 0;"><strong>Email :</strong> <span id="client-email">...</span></p>
+              <p><strong>Nom :</strong> <span id="client-nom">...</span></p>
+              <p><strong>Prénom :</strong> <span id="client-prenom">...</span></p>
+              <p><strong>Email :</strong> <span id="client-email">...</span></p>
+
           </div>
-          <button onclick="endConnection()" style="background: #FF3B30; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">
-              🛑 Mettre fin à la connexion
-          </button>
+          <button onclick="endConnection()" style="background: #FF3B30; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer;">🛑 Stopper</button>
       </div>
   </div>
 
+  <!-- Liste documents reçus -->
   <div id="received-documents" style="display: none; margin-top: 20px;" class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <h3 style="color: #009A44; margin: 0;">📋 Documents partagés :</h3>
-          <button onclick="clearDocumentsList()" class="btn" style="background:#666; color:white; padding:5px 10px; font-size:12px; border:none; border-radius:4px; cursor:pointer;">Vider l'affichage</button>
-      </div>
-      <ul id="docs-list" style="list-style: none; padding: 0;"></ul>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="color: #009A44; margin: 0;">📋 Fichiers reçus :</h3>
+        <button id="download-all-btn" class="btn btn-primary" style="padding: 8px 15px; width: auto; font-size: 13px; background: #FF6B00; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            ⬇️ Tout télécharger
+        </button>
   </div>
+    <ul id="docs-list" style="list-style: none; padding: 0;"></ul>
+</div>
 </main>
 
 <script>
-// ⚠️ METS ICI L'URL DE TON TUNNEL (https://...) OU TA VRAIE IP (http://192.168.1.X:3000)
-const API_URL = window.location.origin 
-
+const API_URL = window.location.origin
 const user = JSON.parse(localStorage.getItem('userData'));
 const token = localStorage.getItem('token');
 
 if (!token || !user || user.role.toLowerCase() !== 'admin') {
-  alert("Accès refusé : Zone réservée aux agents de l'administration.");
+  alert("Accès réservé aux agents.");
   window.location.href = 'index.html';
 }
 
-// Variables globales de session
 let currentRequestId = null;
-let html5QrcodeScanner = null;
 let connectedClientUuid = null; 
 let pollingInterval = null; 
 
 document.getElementById('startScanBtn').addEventListener('click', () => {
-    startAdminScanner();
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+    html5QrcodeScanner.render(async (decodedText) => {
+        html5QrcodeScanner.clear();
+        
+        if (connectedClientUuid && connectedClientUuid !== decodedText) {
+            return alert("Une session est déjà active. Terminez-la d'abord.");
+        }
+
+        connectedClientUuid = decodedText;
+        document.getElementById('status-message').innerText = "⏳ En attente de validation citoyen...";
+        
+        await fetchClientInfo(decodedText);
+
+        const res = await fetch(`${API_URL}/requests/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminUuid: user.uuid, clientUuid: decodedText })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            currentRequestId = data.requestId;
+            waitForClientDocuments();
+        }
+    });
 });
 
-function startAdminScanner() {
-    html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-    
-    html5QrcodeScanner.render(async (decodedText) => {
-        const scannedUuid = decodedText;
-        html5QrcodeScanner.clear(); // On coupe la caméra instantanément
-        
-        // ==========================================
-        // VÉRIFICATIONS DES RÈGLES DE CONNEXION
-        // ==========================================
-        if (connectedClientUuid) {
-            if (connectedClientUuid === scannedUuid) {
-                // C'est la même personne : on avertit et ON LAISSE LE CODE CONTINUER pour relancer la demande
-                document.getElementById('status-message').innerText = "🔄 Relance de la demande sur le téléphone du citoyen...";
-            } else {
-                // Nouveau QR code alors qu'une session est ouverte : on bloque
-                alert("⚠️ ATTENTION : Une session est déjà en cours. Veuillez cliquer sur 'Mettre fin à la connexion' avant de scanner un nouveau citoyen.");
-                return;
-            }
-        } else {
-            // Nouvelle connexion
-            connectedClientUuid = scannedUuid; 
-            document.getElementById('status-message').innerText = "⏳ Demande envoyée. En attente de validation sur le téléphone...";
-            await fetchClientInfo(scannedUuid);
-        }
-
-        // ==========================================
-        // CRÉATION DE LA REQUÊTE
-        // ==========================================
-        try {
-            const res = await fetch(`${API_URL}/requests/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ adminUuid: user.uuid, clientUuid: scannedUuid })
-            });
-            
-            const data = await res.json();
-            if (data.success) {
-                currentRequestId = data.requestId;
-                waitForClientDocuments(); // Lance l'écoute
-            } else {
-                document.getElementById('status-message').innerText = "❌ Impossible de créer la demande de partage.";
-                if (document.getElementById('client-nom').innerText === '...') connectedClientUuid = null; 
-            }
-        } catch (err) {
-            console.error(err);
-            document.getElementById('status-message').innerText = "❌ Connexion au serveur central impossible.";
-        }
-    }, (error) => {
-        // Erreurs de lecture de la caméra ignorées silencieusement
-    });
-}
-
-// Fonction pour récupérer les infos du citoyen
 async function fetchClientInfo(uuid) {
-    try {
-        const res = await fetch(`${API_URL}/users/info/${uuid}`);
-        const data = await res.json();
-
-        if (data.success) {
-            document.getElementById('client-nom').innerText = data.user.nom;
-            document.getElementById('client-prenom').innerText = data.user.prenom;
-            document.getElementById('client-email').innerText = data.user.email;
-            document.getElementById('client-info-section').style.display = 'block';
-        }
-    } catch (err) {
-        console.error("Erreur infos client :", err);
+    const res = await fetch(`${API_URL}/users/info/${uuid}`);
+    const data = await res.json();
+    if (data.success) {
+        document.getElementById('client-nom').innerText = data.user.nom;
+        document.getElementById('client-prenom').innerText = data.user.prenom;
+        document.getElementById('client-email').innerText = data.user.email;
+        document.getElementById('client-info-section').style.display = 'block';
     }
 }
 
-// Fonction pour mettre fin à la connexion et tout nettoyer
-function endConnection() {
-    if (!confirm("Voulez-vous vraiment clore cette session et effacer l'écran ?")) return;
-
-    if (pollingInterval) clearInterval(pollingInterval);
-
-    connectedClientUuid = null;
-    currentRequestId = null;
-
-    document.getElementById('client-info-section').style.display = 'none';
-    document.getElementById('client-nom').innerText = '...';
-    document.getElementById('client-prenom').innerText = '...';
-    document.getElementById('client-email').innerText = '...';
-
-    clearDocumentsList();
-    
-    document.getElementById('status-message').innerText = "✅ Connexion terminée. Le système est prêt pour un nouveau citoyen.";
-}
-
-// Boucle de vérification des documents
 function waitForClientDocuments() {
     if (pollingInterval) clearInterval(pollingInterval);
-
     pollingInterval = setInterval(async () => {
-        if (!connectedClientUuid) {
-            clearInterval(pollingInterval);
-            return;
-        }
-
         try {
             const res = await fetch(`${API_URL}/requests/check-admin/${currentRequestId}`);
             const data = await res.json();
             
             if (data.status === 'accepted') {
-                clearInterval(pollingInterval); 
+                clearInterval(pollingInterval);
                 displayReceivedDocuments(data.documents);
-            } else if (data.status === 'rejected') {
-                clearInterval(pollingInterval); 
-                document.getElementById('status-message').innerText = "❌ Le citoyen a décliné la demande d'accès.";
             }
-        } catch (e) { 
-            console.error("Erreur de synchronisation :", e); 
-        }
+        } catch (e) { console.error(e); }
     }, 3000);
 }
 
-// Affichage et accumulation des documents reçus
 function displayReceivedDocuments(docs) {
-    document.getElementById('status-message').innerText = "✅ Autorisation accordée !";
+    document.getElementById('status-message').innerText = "✅ Documents reçus.";
     const container = document.getElementById('received-documents');
     const list = document.getElementById('docs-list');
     
+    // Afficher le conteneur
     container.style.display = 'block';
-    
-    const emptyMessage = list.querySelector('.empty-msg');
-    if (emptyMessage) emptyMessage.remove();
-    
-    if (!docs || docs.length === 0) {
-        if (list.children.length === 0) {
-            list.innerHTML = '<li class="empty-msg" style="padding: 10px; color: #666;">Aucun document partagé.</li>';
-        }
-        return;
-    }
+    list.innerHTML = ''; // Nettoyer la liste précédente au cas où
     
     docs.forEach(doc => {
-        // Anti-doublon : Si le document est déjà affiché, on l'ignore
-        if (list.querySelector(`[data-id="${doc.id}"]`)) return; 
-        
+        const fileName = doc.chemin_fichier.split(/[/\\]/).pop();
+        const fileUrl = `${API_URL}/uploads/${fileName}`;
         const li = document.createElement('li');
-        li.setAttribute('data-id', doc.id);
-        li.style.padding = "12px 10px";
-        li.style.borderBottom = "1px solid #E0E0E0";
-        li.style.display = "flex";
-        li.style.justifyContent = "space-between";
-        li.style.alignItems = "center";
+        li.style.cssText = "padding: 12px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;";
         
+        // Ajout des boutons Voir et Télécharger pour chaque document
         li.innerHTML = `
-            <span>📄 <strong>${doc.nom_document}</strong></span> 
-            <a href="${API_URL}/${doc.chemin_fichier}" download target="_blank" class="btn btn-success" style="padding: 6px 12px; font-size: 13px; text-decoration: none; border-radius: 4px;">
-                Ouvrir / Enregistrer
-            </a>
+            <span style="font-weight: 500;">📄 ${doc.nom_document}</span>
+            <div style="display: flex; gap: 8px;">
+                <a href="${fileUrl}" target="_blank" style="padding: 6px 12px; background: transparent; color: #333; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold;">
+                    👁️ Voir
+                </a>
+                <a href="${fileUrl}" download class="btn btn-success" target="_blank" style="padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">
+                    ⬇️ Télécharger
+                </a>
+            </div>
         `;
-        // Ajout à la suite de la liste existante
         list.appendChild(li);
+    });
+
+    // Éviter de multiplier les événements "click" si la fonction est appelée plusieurs fois
+    const downloadAllBtn = document.getElementById('download-all-btn');
+    const newDownloadAllBtn = downloadAllBtn.cloneNode(true);
+    downloadAllBtn.replaceWith(newDownloadAllBtn);
+
+    // Lier l'événement au bouton "Tout télécharger"
+    newDownloadAllBtn.addEventListener('click', () => {
+        downloadAllDocuments(docs);
     });
 }
 
-// Fonction utilitaire pour vider l'affichage
-function clearDocumentsList() {
-    document.getElementById('docs-list').innerHTML = '';
+// Nouvelle fonction pour déclencher les téléchargements multiples
+async function downloadAllDocuments(docs) {
+    if (!docs || docs.length === 0) return;
+
+    for (const doc of docs) {
+        const fileName = doc.chemin_fichier.split(/[/\\]/).pop();
+        const fileUrl = `${API_URL}/uploads/${fileName}`;
+
+        try {
+            // 1. Récupérer le fichier via fetch (en binaire)
+            const response = await fetch(fileUrl);
+            if (!response.ok) throw new Error(`Erreur lors du téléchargement de ${fileName}`);
+
+            const blob = await response.blob();
+            
+            // 2. Créer une URL temporaire pour le blob
+            const url = window.URL.createObjectURL(blob);
+            
+            // 3. Créer un lien virtuel et déclencher le clic
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = doc.nom_document || fileName;
+            document.body.appendChild(link);
+            link.click();
+            
+            // 4. Nettoyage : retirer le lien et libérer l'URL mémoire
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            // Petit délai optionnel pour ne pas saturer le navigateur
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+        } catch (error) {
+            console.error("Échec du téléchargement pour :", fileName, error);
+            alert(`Erreur lors du téléchargement de ${fileName}. Vérifiez votre connexion.`);
+        }
+    }
+}
+
+function endConnection() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    connectedClientUuid = null;
+    document.getElementById('client-info-section').style.display = 'none';
     document.getElementById('received-documents').style.display = 'none';
+    document.getElementById('docs-list').innerHTML = '';
+    document.getElementById('status-message').innerText = "";
 }
 </script>
+</body>
+</html>

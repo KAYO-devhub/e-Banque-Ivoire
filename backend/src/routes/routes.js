@@ -1,14 +1,12 @@
 import express from 'express'
 import { register, getDocuments, deleteDocuments, updateDocumentName } from '../services/features.js'
-import { storage, upload } from '../services/upload.js'
+import { storage, upload, nomFinal } from '../services/upload.js'
 import { pool } from '../config/database.js'
 import { loginUser } from '../controllers/authControllers.js'
 import { verifyToken } from '../middleware/authMiddleware.js'
 import cors from 'cors'
 import crypto from 'crypto'
-import { dirname } from 'path'
 import path from 'path'
-
 
 
 export const app = express()
@@ -18,8 +16,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
     // Supprimez ou passez credentials à false
 }));
-
-app.use('/backend/src/uploads', express.static(path.join(process.cwd(), 'backend/src/uploads')));
 
 app.use(express.json())
 
@@ -87,7 +83,7 @@ app.post('/documents/:uuid',verifyToken,upload.single('monFichier'), async (req,
             INSERT INTO documents(nom_document,type_document,mime_type,chemin_fichier,user_uuid)
             VALUES(?,?,?,?,?)
         `, [
-            req.file.originalname,
+            nomFinal,
             "document administratif",
             req.file.mimetype,
             req.file.path,
@@ -113,7 +109,7 @@ app.post('/documents/scan/:uuid', verifyToken, upload.single('monFichier'), asyn
             INSERT INTO documents(nom_document, type_document, mime_type, chemin_fichier, user_uuid)
             VALUES(?, ?, ?, ?, ?)
         `, [
-            `Scan_${Date.now()}_` + req.file.originalname,
+            nomFinal,
             "Document Scanné",
             req.file.mimetype,
             req.file.path,
