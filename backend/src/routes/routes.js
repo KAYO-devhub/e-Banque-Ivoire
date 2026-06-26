@@ -83,7 +83,7 @@ app.post('/documents/:uuid',verifyToken,upload.single('monFichier'), async (req,
             INSERT INTO documents(nom_document,type_document,mime_type,chemin_fichier,user_uuid)
             VALUES(?,?,?,?,?)
         `, [
-            nomFinal,
+            nomFichierFinal,
             "document administratif",
             req.file.mimetype,
             req.file.path,
@@ -109,7 +109,7 @@ app.post('/documents/scan/:uuid', verifyToken, upload.single('monFichier'), asyn
             INSERT INTO documents(nom_document, type_document, mime_type, chemin_fichier, user_uuid)
             VALUES(?, ?, ?, ?, ?)
         `, [
-            nomFinal,
+            nomFichierFinal,
             "Document Scanné",
             req.file.mimetype,
             req.file.path,
