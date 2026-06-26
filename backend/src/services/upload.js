@@ -1,7 +1,7 @@
 import { app } from '../routes/routes.js';
 import multer from 'multer';
 import path from 'path';
-import { pool } from '../config/database.js';
+import { version } from 'os';
 
 const nettoyerTexte = (texte) => {
     return texte
@@ -22,15 +22,13 @@ export const storage = multer.diskStorage({
         // Utilisation de process.cwd() pour éviter l'erreur "ENOENT" sur le serveur Render
         cb(null, path.join(process.cwd(), 'backend/src/uploads')); 
     },
-    filename: async (req, file, cb) => {
+    filename:  (req, file, cb) => {
         // 1. Récupération de la valeur de la case cochée (envoyée par le frontend)
         // Si pour une raison quelconque la valeur est absente, on met "Document" par défaut
         const typeDoc = req.body.typeDocument || 'Document';
-        const userUuid = req.params.uuid
 
-        const user = await pool.query(`SELECT nom,prenom FROM users WHERE uuid = ?`,[userUuid])
-        const nom = user[0]?.nom || 'nom';
-        const prenom = user[0]?.prenom || 'prenom';
+        const nom = req.user?.nom || 'nom';
+        const prenom = req.user?.prenom || 'prenom';
 
         const nomPropre = nettoyerTexte(nom);
         const prenomPropre = nettoyerTexte(prenom);
@@ -56,6 +54,5 @@ export const storage = multer.diskStorage({
         cb(null, nomFinal); 
     }
 });
-
 
 export const upload = multer({ storage: storage });
