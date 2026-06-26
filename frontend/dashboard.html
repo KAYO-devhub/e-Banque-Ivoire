@@ -546,6 +546,7 @@
 
         // Envoi obligatoire du type de document au backend
         formData.append('typeDocument', selectedType);
+        formData.append('user_uuid', userUuid);
 
         if (pendingUploadData instanceof File) {
             formData.append('monFichier', pendingUploadData);
