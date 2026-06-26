@@ -1,6 +1,6 @@
 import express from 'express'
 import { register, getDocuments, deleteDocuments, updateDocumentName } from '../services/features.js'
-import { storage, upload, nomFinal } from '../services/upload.js'
+import { storage, upload, nomFichierFinal } from '../services/upload.js'
 import { pool } from '../config/database.js'
 import { loginUser } from '../controllers/authControllers.js'
 import { verifyToken } from '../middleware/authMiddleware.js'
