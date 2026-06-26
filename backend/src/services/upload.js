@@ -22,7 +22,7 @@ export const storage = multer.diskStorage({
         // Utilisation de process.cwd() pour éviter l'erreur "ENOENT" sur le serveur Render
         cb(null, path.join(process.cwd(), 'backend/src/uploads')); 
     },
-    filename: (req, file, cb) => {
+    filename: async (req, file, cb) => {
         // 1. Récupération de la valeur de la case cochée (envoyée par le frontend)
         // Si pour une raison quelconque la valeur est absente, on met "Document" par défaut
         const typeDoc = req.body.typeDocument || 'Document';
