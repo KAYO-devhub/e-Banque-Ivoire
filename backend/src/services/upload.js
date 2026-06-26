@@ -1,5 +1,6 @@
 import multer from 'multer';
 import path from 'path';
+import { pool } from '../config/database.js';
 
 export let nomFichierFinal
 // Fonction unifiée pour nettoyer TOUTES les chaînes (Type doc, Nom, Prénom)
@@ -22,16 +23,16 @@ export const storage = multer.diskStorage({
         // Excellente idée : process.cwd() est indispensable pour le système de fichiers éphémère de Render
         cb(null, path.join(process.cwd(), 'backend/src/uploads')); 
     },
-    filename: (req, file, cb) => {
+    filename: async(req, file, cb) => {
         // 1. Récupération et NETTOYAGE du type de document (ex: "Extrait d'acte" -> "extrait_d_acte")
         const typeDocBrut = req.body.typeDocument || 'document';
         const typeDoc = nettoyerTexte(typeDocBrut);
 
         // 2. Récupération et nettoyage du Nom / Prénom (Via ton middleware JWT req.user)
-        const nom = req.user?.nom || 'nom';
-        const prenom = req.user?.prenom || 'prenom';
-        const nomPropre = nettoyerTexte(nom);
-        const prenomPropre = nettoyerTexte(prenom);
+        const nom = await pool.query(`SELECT nom FROM users WHERE uuid = ?`,[req.body.user_uuid]) || 'nom';
+        const prenom = await pool.query(`SELECT prenom FROM users WHERE uuid = ?`,[req.body.user_uuid]) || 'prenom';
+        const nomPropre = nettoyerTexte(nom[0]);
+        const prenomPropre = nettoyerTexte(prenom[0]);
         
         // 3. Extraction de l'extension (.pdf, .jpg) en minuscules
         const extension = path.extname(file.originalname).toLowerCase();
