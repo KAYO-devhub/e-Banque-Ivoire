@@ -44,7 +44,7 @@ export const storage = multer.diskStorage({
 
         // 5. Assemblage final 100% standardisé en snake_case (_)
         // Exemple : cni_kouame_axel_2026_06_26.jpg
-        nomFichierFinal = `${typeDoc}_${nomPropre}_${prenomPropre}_${dateFormatee}${extension}`;
+        nomFichierFinal = `${typeDoc}_${nomBrut}_${prenomBrut}_${dateFormatee}${extension}`;
         
         cb(null, nomFichierFinal); 
     }
