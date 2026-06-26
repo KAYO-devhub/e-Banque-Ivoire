@@ -1,7 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 
-export const nomFichierFinal
+export let nomFichierFinal
 // Fonction unifiée pour nettoyer TOUTES les chaînes (Type doc, Nom, Prénom)
 const nettoyerTexte = (texte) => {
     if (!texte) return '';
