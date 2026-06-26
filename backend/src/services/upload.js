@@ -2,6 +2,7 @@ import { app } from '../routes/routes.js';
 import multer from 'multer';
 import path from 'path';
 
+const email = localStorage.getItem("email")
 export let nomFinal;
 export const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -22,10 +23,7 @@ export const storage = multer.diskStorage({
         const mois = String(date.getMonth() + 1).padStart(2, '0');
         const jour = String(date.getDate()).padStart(2, '0');
         const dateFormatee = `${annee}_${mois}_${jour}`;
-
-        // 4. Récupération de l'email de l'utilisateur
-        const {email} = req.body
-
+        
         // 4. Assemblage du nom : [valeur_de_la_case]_[annee_mois_jour].[extension]
         nomFinal = `${typeDoc}_${email}_${dateFormatee}${extension}`;
         
