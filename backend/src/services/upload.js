@@ -1,9 +1,21 @@
 import { app } from '../routes/routes.js';
 import multer from 'multer';
 import path from 'path';
-import localStorage from 'localStorage'
+import { pool } from '../config/database.js';
 
-const email = localStorage.getItem("email")
+const nettoyerTexte = (texte) => {
+    return texte
+        .toLowerCase()
+        // Enclenche le retrait des accents (ex: é -> e, ç -> c)
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+        // Remplace les espaces, apostrophes et tirets par un underscore
+        .replace(/[^a-z0-9]/g, '_') 
+        // Évite d'avoir plusieurs underscores à la suite (ex: __)
+        .replace(/_+/g, '_'); 
+};
+
+
+
 export let nomFinal;
 export const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -14,6 +26,14 @@ export const storage = multer.diskStorage({
         // 1. Récupération de la valeur de la case cochée (envoyée par le frontend)
         // Si pour une raison quelconque la valeur est absente, on met "Document" par défaut
         const typeDoc = req.body.typeDocument || 'Document';
+        const userUuid = req.params.uuid
+
+        const user = await pool.query(`SELECT nom,prenom FROM users WHERE uuid = ?`,[userUuid])
+        const nom = user[0]?.nom || 'nom';
+        const prenom = user[0]?.prenom || 'prenom';
+
+        const nomPropre = nettoyerTexte(nom);
+        const prenomPropre = nettoyerTexte(prenom);
         
         // 2. Extraction de l'extension (.pdf, .jpg, etc.)
         const extension = path.extname(file.originalname);
@@ -26,7 +46,7 @@ export const storage = multer.diskStorage({
         const dateFormatee = `${annee}_${mois}_${jour}`;
 
         // 4. Assemblage du nom : [valeur_de_la_case]_[annee_mois_jour].[extension]
-        nomFinal = `${typeDoc}_${email}_${dateFormatee}${extension}`;
+        nomFinal = `${typeDoc}_${nomPropre}_${prenomPropre}_${dateFormatee}${extension}`;
         
         // 5. Nettoyage de sécurité (optionnel mais recommandé)
         // Remplace les espaces et les apostrophes par des tirets pour éviter les bugs d'URL
