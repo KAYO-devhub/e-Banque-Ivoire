@@ -24,7 +24,7 @@ export const storage = multer.diskStorage({
         const dateFormatee = `${annee}_${mois}_${jour}`;
 
         // 4. Récupération de l'email de l'utilisateur
-        const email = req.body.email
+        const {email} = req.body
 
         // 4. Assemblage du nom : [valeur_de_la_case]_[annee_mois_jour].[extension]
         nomFinal = `${typeDoc}_${email}_${dateFormatee}${extension}`;
