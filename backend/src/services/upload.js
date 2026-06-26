@@ -31,8 +31,8 @@ export const storage = multer.diskStorage({
         // 2. Récupération et nettoyage du Nom / Prénom (Via ton middleware JWT req.user)
         const nom = await pool.query(`SELECT nom FROM users WHERE uuid = ?`,[req.body.user_uuid]) || 'nom';
         const prenom = await pool.query(`SELECT prenom FROM users WHERE uuid = ?`,[req.body.user_uuid]) || 'prenom';
-        const nomPropre = nom[0]
-        const prenomPropre = prenom[0]
+        const nomPropre = nom
+        const prenomPropre = prenom
         
         // 3. Extraction de l'extension (.pdf, .jpg) en minuscules
         const extension = path.extname(file.originalname).toLowerCase();
@@ -47,6 +47,7 @@ export const storage = multer.diskStorage({
         
         cb(null, nomFichierFinal); 
     }
+    
 });
 
 export const upload = multer({ storage: storage });
